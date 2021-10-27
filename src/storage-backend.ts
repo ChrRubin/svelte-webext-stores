@@ -11,14 +11,18 @@ type OnChangedCallback = (changes: Changes) => void;
 export interface StorageBackend {
   /**
    * Get value from storage backend.
+   * @param key Storage key.
    */
   get: <T>(key: string) => Promise<T | null>;
   /**
    * Set value in storage backend.
+   * @param key Storage key.
+   * @param value Value to set.
    */
   set: <T>(key: string, value: T) => Promise<void>;
   /**
-   * Add listener callback for storage change events.
+   * Add listener for storage change events.
+   * @param callback Callback function when onChanged event is triggered.
    */
   addOnChangedListener: (callback: OnChangedCallback) => void;
   /**
@@ -120,7 +124,6 @@ export function storageMV3(area: StorageArea = 'local'): StorageBackend {
 
 /**
  * Factory function for legacy/non-WebExtensions storage backend.
- *
  * @returns StorageBackend object.
  */
 export function storageLegacy(): StorageBackend {
