@@ -1,0 +1,19 @@
+{
+  "name": "svelte-webext-store",
+  "version": "0.0.1",
+  "author": "ChrRubin",
+  "license": "MIT",
+  "devDependencies": {
+    "@tsconfig/svelte": "^2.0.1",
+    "@types/chrome": "^0.0.161",
+    "@typescript-eslint/eslint-plugin": "^4.0.1",
+    "@typescript-eslint/parser": "^4.0.0",
+    "eslint": "^7.12.1",
+    "eslint-config-standard-with-typescript": "^21.0.1",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.0.0",
+    "svelte": "^3.44.0",
+    "typescript": "^4"
+  }
+}
