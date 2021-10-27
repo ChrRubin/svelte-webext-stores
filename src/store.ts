@@ -1,9 +1,21 @@
-import { writable, Writable } from 'svelte/store';
+import { writable, Writable, Updater } from 'svelte/store';
 import { storageMV2, StorageBackend } from './storage-backend';
 
-interface SyncStore<T> extends Writable<T> {
+/**
+ * Svelte Writable store that is synchronized to the storage backend.
+ */
+export interface SyncStore<T> extends Writable<T> {
+  /**
+   * Get current store value.
+   */
   get: () => T;
+  /**
+   * Update store value from storage backend.
+   */
   updateFromBackend: () => Promise<void>;
+  /**
+   * Reset store value to default value.
+   */
   reset: () => Promise<void>;
 }
 
@@ -25,6 +37,11 @@ function syncStore<T>(key: string, defaultValue: T | null, backend: StorageBacke
     await backend.set(key, value);
   }
 
+  async function update(updater: Updater<T | null>): Promise<void> {
+    const result = updater(currentValue);
+    await set(result);
+  }
+
   async function updateFromBackend(): Promise<void> {
     const value = await backend.get<T>(key);
     setStore(value);
@@ -37,14 +54,14 @@ function syncStore<T>(key: string, defaultValue: T | null, backend: StorageBacke
   return {
     get,
     set,
-    update: store.update,
+    update,
     subscribe: store.subscribe,
     updateFromBackend,
     reset
   };
 }
 
-interface WebExtStorage {
+export interface WebExtStorage {
   newSyncStore: <T>(key: string, defaultValue: T) => SyncStore<T | null>;
   cleanUp: () => void;
 }

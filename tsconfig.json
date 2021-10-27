@@ -1,8 +1,11 @@
 {
-  "extends": "@tsconfig/svelte/tsconfig.json",
-  "include": ["src/**/*", ".eslintrc.js"],
-  "exclude": ["node_modules"],
+  "include": ["src/**/*", ".eslintrc.js", "*.js"],
+  "exclude": ["node_modules", "dist"],
   "compilerOptions": {
-    "strict": true
+    "target": "ES2017",
+    "moduleResolution": "node",
+    "strict": true,
+    "declaration": true,
+    "outDir": "dist"
   }
 }

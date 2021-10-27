@@ -5,10 +5,25 @@ interface Changes { [key: string]: chrome.storage.StorageChange }
 type OnChangedListener = (changes: Changes, areaName: StorageArea) => void;
 type OnChangedCallback = (changes: Changes) => void;
 
+/**
+ * Interface contract for StorageBackend objects.
+ */
 export interface StorageBackend {
+  /**
+   * Get value from storage backend.
+   */
   get: <T>(key: string) => Promise<T | null>;
+  /**
+   * Set value in storage backend.
+   */
   set: <T>(key: string, value: T) => Promise<void>;
+  /**
+   * Add listener callback for storage change events.
+   */
   addOnChangedListener: (callback: OnChangedCallback) => void;
+  /**
+   * Perform clean up operations.
+   */
   cleanUp: () => void;
 }
 
@@ -16,15 +31,6 @@ interface ChromeStorage {
   storageArea: chrome.storage.StorageArea;
   addOnChangedListener: (callback: OnChangedCallback) => void;
   cleanUp: () => void;
-}
-
-function resolveCallback<T>(value: T, res: Resolve<T>, rej: Reject): void {
-  const error = chrome.runtime.lastError;
-  if (error != null) {
-    rej(error);
-    return;
-  }
-  res(value);
 }
 
 function initChromeStorage(area: StorageArea): ChromeStorage {
@@ -47,7 +53,24 @@ function initChromeStorage(area: StorageArea): ChromeStorage {
   return { storageArea, addOnChangedListener, cleanUp };
 }
 
-/** Factory function for Manifest Version 2 (callback API) storage. */
+function resolveCallback<T>(value: T, res: Resolve<T>, rej: Reject): void {
+  const error = chrome.runtime.lastError;
+  if (error != null) {
+    rej(error);
+    return;
+  }
+  res(value);
+}
+
+/**
+ * Factory function for Manifest Version 2 (callback API) storage backend.
+ *
+ * @param area Type of StorageArea to use.
+ * Valid values: `'local'` | `'sync'` | `'managed'`.
+ * Default: `'local'`
+ *
+ * @returns StorageBackend object.
+ */
 export function storageMV2(area: StorageArea = 'local'): StorageBackend {
   const { storageArea, addOnChangedListener, cleanUp } = initChromeStorage(area);
 
@@ -72,7 +95,15 @@ export function storageMV2(area: StorageArea = 'local'): StorageBackend {
   return { get, set, addOnChangedListener, cleanUp };
 }
 
-/** Factory function for Manifest Version 3 (Promise API) storage. */
+/**
+ * Factory function for Manifest Version 3 (Promise API) storage backend.
+ *
+ * @param area Type of StorageArea to use.
+ * Valid values: `'local'` | `'sync'` | `'managed'`.
+ * Default: `'local'`
+ *
+ * @returns StorageBackend object.
+ */
 export function storageMV3(area: StorageArea = 'local'): StorageBackend {
   const { storageArea, addOnChangedListener, cleanUp } = initChromeStorage(area);
 
@@ -87,7 +118,11 @@ export function storageMV3(area: StorageArea = 'local'): StorageBackend {
   return { get, set, addOnChangedListener, cleanUp };
 }
 
-/** Factory function for legacy/non-WebExtensions storage. */
+/**
+ * Factory function for legacy/non-WebExtensions storage backend.
+ *
+ * @returns StorageBackend object.
+ */
 export function storageLegacy(): StorageBackend {
   let callbacks: OnChangedCallback[] = [];
   const listeners: Array<(event: StorageEvent) => void> = [];

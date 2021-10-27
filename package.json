@@ -3,6 +3,11 @@
   "version": "0.0.1",
   "author": "ChrRubin",
   "license": "MIT",
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "devDependencies": {
     "@tsconfig/svelte": "^2.0.1",
     "@types/chrome": "^0.0.161",
@@ -13,7 +18,14 @@
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.0.0",
+    "rollup": "^2.58.3",
+    "rollup-plugin-cleaner": "^1.0.0",
+    "rollup-plugin-delete": "^2.0.0",
+    "rollup-plugin-dts": "^4.0.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "^0.30.0",
     "svelte": "^3.44.0",
+    "tslib": "^2.3.1",
     "typescript": "^4"
   }
 }
