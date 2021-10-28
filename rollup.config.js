@@ -32,7 +32,7 @@ const config = [
     plugins: [
       dts(),
       del({
-        targets: ['./dist/*.d.ts', '!./dist/index.d.ts'],
+        targets: ['./dist/*.d.ts', '!./dist/index.d.ts', './dist/__tests__'],
         hook: 'buildEnd'
       })
     ]

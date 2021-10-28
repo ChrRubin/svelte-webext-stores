@@ -1,6 +1,6 @@
 {
   "include": ["src/**/*", ".eslintrc.js", "*.js"],
-  "exclude": ["node_modules", "dist"],
+  "exclude": ["node_modules", "dist", "__tests__"],
   "compilerOptions": {
     "target": "ES2017",
     "moduleResolution": "node",

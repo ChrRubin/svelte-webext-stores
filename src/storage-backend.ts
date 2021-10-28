@@ -206,26 +206,21 @@ export function storageLegacy(area: WebStorageType = 'local'): StorageBackend {
   const listeners: Array<(event: StorageEvent) => void> = [];
 
   async function get<T>(key: string): Promise<T | undefined> {
-    return await Promise.resolve((() => {
-      const result = storage.getItem(key);
-      console.log(result);
-      if (result == null) return undefined;
-      return JSON.parse(result);
-    })());
+    const result = storage.getItem(key);
+    if (result == null) return undefined;
+    return JSON.parse(result);
   }
 
   async function set<T>(key: string, value: T): Promise<void> {
-    return await Promise.resolve((async () => {
-      const oldValue = await get(key);
-      storage.setItem(key, JSON.stringify(value));
-      // storage window event only triggers for storage changes outside of current window
-      callbacks.forEach((callback) => {
-        const changes = {
-          [key]: { oldValue, newValue: value }
-        };
-        callback(changes);
-      });
-    })());
+    const oldValue = await get(key);
+    storage.setItem(key, JSON.stringify(value));
+    // storage window event only triggers for storage changes outside of current window
+    callbacks.forEach((callback) => {
+      const changes = {
+        [key]: { oldValue, newValue: value }
+      };
+      callback(changes);
+    });
   }
 
   function addOnChangedListener(callback: OnChangedCallback): void {
@@ -247,11 +242,11 @@ export function storageLegacy(area: WebStorageType = 'local'): StorageBackend {
   }
 
   async function remove(key: string): Promise<void> {
-    return await Promise.resolve(storage.removeItem(key));
+    storage.removeItem(key);
   }
 
   async function clear(): Promise<void> {
-    return await Promise.resolve(storage.clear());
+    storage.clear();
   }
 
   return { get, set, addOnChangedListener, cleanUp, remove, clear };

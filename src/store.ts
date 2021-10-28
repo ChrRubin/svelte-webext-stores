@@ -10,7 +10,7 @@ export interface SyncStore<T> extends Writable<T> {
   /**
    * Get current store value.
    */
-  get: () => T;
+  get: () => Promise<T>;
   /**
    * Update store value from storage backend.
    */
@@ -29,17 +29,17 @@ export interface SyncStore<T> extends Writable<T> {
   readonly key: string;
 }
 
-function syncStore<T>(
+async function syncStore<T>(
   key: string,
   defaultValue: T,
   backend: StorageBackend,
   syncAcrossSessions: boolean,
   skipInitialUpdate = false
-): SyncStore<T> {
+): Promise<SyncStore<T>> {
   let currentValue: T = defaultValue;
   const store = writable(defaultValue);
 
-  function get(): T {
+  async function get(): Promise<T> {
     return currentValue;
   }
 
@@ -72,7 +72,7 @@ function syncStore<T>(
   }
 
   // Initial storage backend check
-  if (!skipInitialUpdate) updateFromBackend().catch((e) => console.error(e));
+  if (!skipInitialUpdate) await updateFromBackend();
 
   return {
     get,
@@ -109,7 +109,7 @@ export interface MigrationStrategy<T> {
   migrationFunction: <O>(oldValue: O) => T;
 }
 
-function versionedSyncStore<T>(
+async function versionedSyncStore<T>(
   key: string,
   defaultValue: T,
   backend: StorageBackend,
@@ -117,20 +117,18 @@ function versionedSyncStore<T>(
   version: number,
   separator: string,
   migrations: Array<MigrationStrategy<T>>
-): VersionedSyncStore<T> {
+): Promise<VersionedSyncStore<T>> {
   const currentKey = key.concat(separator, version.toString());
-  const ss = syncStore(currentKey, defaultValue, backend, syncAcrossSessions, true);
+  const ss = await syncStore(currentKey, defaultValue, backend, syncAcrossSessions, true);
 
-  migrations.forEach((strategy) => {
-    (async () => {
-      const oldKey = key.concat(separator, strategy.oldVersion.toString());
-      const oldValue = await backend.get(oldKey);
-      if (oldValue === undefined) return;
-      const newValue = strategy.migrationFunction(oldValue);
-      await ss.set(newValue);
-      await backend.remove(oldKey);
-    })().catch((e) => console.error(e));
-  });
+  for (const strategy of migrations) {
+    const oldKey = key.concat(separator, strategy.oldVersion.toString());
+    const oldValue = await backend.get(oldKey);
+    if (oldValue === undefined) continue;
+    const newValue = strategy.migrationFunction(oldValue);
+    await ss.set(newValue);
+    await backend.remove(oldKey);
+  }
 
   return ss;
 }
@@ -146,7 +144,7 @@ export interface WebExtStores {
    */
   newSyncStore: <T>(
     key: string, defaultValue: T, syncAcrossSessions?: boolean
-  ) => SyncStore<T>;
+  ) => Promise<SyncStore<T>>;
   /**
    * Perform clean up operations.
    */
@@ -169,7 +167,11 @@ export interface WebExtStores {
     version?: number,
     separator?: string,
     migrations?: Array<MigrationStrategy<T>>
-  ) => VersionedSyncStore<T>;
+  ) => Promise<VersionedSyncStore<T>>;
+  /**
+   * Clears all registered stores from storage.
+   */
+  clear: () => Promise<void>;
 }
 
 /**
@@ -190,26 +192,33 @@ export function webExtStores(
     });
   });
 
-  function newSyncStore<T>(
+  async function newSyncStore<T>(
     key: string, defaultValue: T, syncAcrossSessions = true
-  ): SyncStore<T> {
-    const store = syncStore(key, defaultValue, backend, syncAcrossSessions);
+  ): Promise<SyncStore<T>> {
+    const store = await syncStore(key, defaultValue, backend, syncAcrossSessions);
     stores.set(key, store);
     return store;
   }
 
-  function newVersionedSyncStore<T>(
+  async function newVersionedSyncStore<T>(
     key: string,
     defaultValue: T,
     syncAcrossSessions = true,
     version = 0,
     separator = '$$',
     migrations: Array<MigrationStrategy<T>> = []
-  ): VersionedSyncStore<T> {
-    const store = versionedSyncStore(key, defaultValue, backend, syncAcrossSessions, version, separator, migrations);
+  ): Promise<VersionedSyncStore<T>> {
+    const store = await versionedSyncStore(key, defaultValue, backend, syncAcrossSessions, version, separator, migrations);
     stores.set(store.key, store);
     return store;
   }
 
-  return { newSyncStore, cleanUp: backend.cleanUp, newVersionedSyncStore };
+  async function clear(): Promise<void> {
+    for (const key of stores.keys()) {
+      await backend.remove(key);
+    }
+    stores.clear();
+  }
+
+  return { newSyncStore, cleanUp: backend.cleanUp, newVersionedSyncStore, clear };
 }
