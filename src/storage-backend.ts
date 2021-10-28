@@ -2,6 +2,7 @@ import type * as browser from 'webextension-polyfill';
 
 type StorageArea = 'local' | 'sync' | 'managed';
 type WebExtType = 'webExt' | 'chrome';
+type WebStorageType = 'session' | 'local';
 type Resolve<T> = (value: T) => void;
 type Reject = (reason?: any) => void;
 type Changes = Record<string, chrome.storage.StorageChange>;
@@ -174,22 +175,28 @@ export function storageWebExt(area: StorageArea = 'local'): StorageBackend {
 }
 
 /**
- * Factory function for legacy/non-WebExtension storage backend.
+ * Factory function for legacy/non-WebExtension storage backend
+ * (`window.localStorage`, `window.sessionStorage`).
+ * @param area Type of Web Storage to use.
+ * Valid values: `'local'` | `'session'`
+ * Default: `'local'`
  * @returns StorageBackend object.
  */
-export function storageLegacy(): StorageBackend {
+export function storageLegacy(area: WebStorageType = 'local'): StorageBackend {
+  const storage = area === 'local' ? localStorage : sessionStorage;
+
   let callbacks: OnChangedCallback[] = [];
   const listeners: Array<(event: StorageEvent) => void> = [];
 
   async function get<T>(key: string): Promise<T | undefined> {
-    const result = localStorage.getItem(key);
+    const result = storage.getItem(key);
     if (result == null) return undefined;
     return JSON.parse(result);
   }
 
   async function set<T>(key: string, value: T): Promise<void> {
     const oldValue = await get(key);
-    localStorage.setItem(key, JSON.stringify(value));
+    storage.setItem(key, JSON.stringify(value));
     // storage window event only triggers for storage changes outside of current window
     callbacks.forEach((callback) => {
       const changes = {
@@ -201,7 +208,7 @@ export function storageLegacy(): StorageBackend {
 
   function addOnChangedListener(callback: OnChangedCallback): void {
     const listener = (event: StorageEvent): void => {
-      if (event.key == null) return;
+      if (event.key == null || event.storageArea !== storage) return;
       const changes = {
         [event.key]: { oldValue: event.oldValue, newValue: event.newValue }
       };
@@ -218,7 +225,7 @@ export function storageLegacy(): StorageBackend {
   }
 
   async function remove(key: string): Promise<void> {
-    localStorage.removeItem(key);
+    storage.removeItem(key);
   }
 
   return { get, set, addOnChangedListener, cleanUp, remove };
