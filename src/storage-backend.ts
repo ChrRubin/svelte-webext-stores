@@ -1,13 +1,14 @@
 import type * as browser from 'webextension-polyfill';
 
-type StorageArea = 'local' | 'sync' | 'managed';
+export type StorageArea = 'local' | 'sync' | 'managed';
+export type WebStorageType = 'session' | 'local';
+export type StorageChanges = Record<string, chrome.storage.StorageChange>;
+export type OnChangedCallback = (changes: StorageChanges) => void;
+
 type WebExtType = 'webExt' | 'chrome';
-type WebStorageType = 'session' | 'local';
 type Resolve<T> = (value: T) => void;
 type Reject = (reason?: any) => void;
-type Changes = Record<string, chrome.storage.StorageChange>;
-type OnChangedListener = (changes: Changes, areaName: StorageArea) => void;
-type OnChangedCallback = (changes: Changes) => void;
+type OnChangedListener = (changes: StorageChanges, areaName: StorageArea) => void;
 
 /**
  * Interface contract for StorageBackend objects.
@@ -37,6 +38,10 @@ export interface StorageBackend {
    * Remove item with given key from storage.
    */
   remove: (key: string) => Promise<void>;
+  /**
+   * Clears all stored values from storage backend.
+   */
+  clear: () => Promise<void>;
 }
 
 interface WebExtStorage {
@@ -58,7 +63,7 @@ function initWebExtStorage(type: WebExtType, area: StorageArea): WebExtStorage |
   const storageArea = storage[area];
 
   function addOnChangedListener(callback: OnChangedCallback): void {
-    const listener = (changes: Changes, areaName: string): void => {
+    const listener = (changes: StorageChanges, areaName: string): void => {
       if (areaName !== area) return;
       callback(changes);
     };
@@ -123,7 +128,15 @@ export function storageMV2(area: StorageArea = 'local'): StorageBackend {
     );
   }
 
-  return { get, set, addOnChangedListener, cleanUp, remove };
+  async function clear(): Promise<void> {
+    return await new Promise(
+      (resolve, reject) => storageArea.clear(
+        () => resolveCallback(undefined, resolve, reject)
+      )
+    );
+  }
+
+  return { get, set, addOnChangedListener, cleanUp, remove, clear };
 }
 
 function storageWebExtShared(type: WebExtType, area: StorageArea): StorageBackend {
@@ -145,7 +158,11 @@ function storageWebExtShared(type: WebExtType, area: StorageArea): StorageBacken
     return await storageArea.remove(key);
   }
 
-  return { get, set, addOnChangedListener, cleanUp, remove };
+  async function clear(): Promise<void> {
+    return await storageArea.clear();
+  }
+
+  return { get, set, addOnChangedListener, cleanUp, remove, clear };
 }
 
 /**
@@ -189,26 +206,31 @@ export function storageLegacy(area: WebStorageType = 'local'): StorageBackend {
   const listeners: Array<(event: StorageEvent) => void> = [];
 
   async function get<T>(key: string): Promise<T | undefined> {
-    const result = storage.getItem(key);
-    if (result == null) return undefined;
-    return JSON.parse(result);
+    return await Promise.resolve((() => {
+      const result = storage.getItem(key);
+      console.log(result);
+      if (result == null) return undefined;
+      return JSON.parse(result);
+    })());
   }
 
   async function set<T>(key: string, value: T): Promise<void> {
-    const oldValue = await get(key);
-    storage.setItem(key, JSON.stringify(value));
-    // storage window event only triggers for storage changes outside of current window
-    callbacks.forEach((callback) => {
-      const changes = {
-        [key]: { oldValue, newValue: value }
-      };
-      callback(changes);
-    });
+    return await Promise.resolve((async () => {
+      const oldValue = await get(key);
+      storage.setItem(key, JSON.stringify(value));
+      // storage window event only triggers for storage changes outside of current window
+      callbacks.forEach((callback) => {
+        const changes = {
+          [key]: { oldValue, newValue: value }
+        };
+        callback(changes);
+      });
+    })());
   }
 
   function addOnChangedListener(callback: OnChangedCallback): void {
     const listener = (event: StorageEvent): void => {
-      if (event.key == null || event.storageArea !== storage) return;
+      if (event.key == null) return;
       const changes = {
         [event.key]: { oldValue: event.oldValue, newValue: event.newValue }
       };
@@ -225,8 +247,12 @@ export function storageLegacy(area: WebStorageType = 'local'): StorageBackend {
   }
 
   async function remove(key: string): Promise<void> {
-    storage.removeItem(key);
+    return await Promise.resolve(storage.removeItem(key));
   }
 
-  return { get, set, addOnChangedListener, cleanUp, remove };
+  async function clear(): Promise<void> {
+    return await Promise.resolve(storage.clear());
+  }
+
+  return { get, set, addOnChangedListener, cleanUp, remove, clear };
 }

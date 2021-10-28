@@ -2,7 +2,8 @@ module.exports = {
   root: true,
   env: {
     browser: true,
-    webextensions: true
+    webextensions: true,
+    jest: true
   },
   parser: '@typescript-eslint/parser',
   extends: 'standard-with-typescript',

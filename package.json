@@ -25,13 +25,15 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "rollup -c"
+    "build": "rollup -c",
+    "test": "jest src"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "devDependencies": {
     "@tsconfig/svelte": "^2.0.1",
     "@types/chrome": "^0.0.161",
+    "@types/jest": "^27.0.2",
     "@types/webextension-polyfill": "^0.8.1",
     "@typescript-eslint/eslint-plugin": "^4.0.1",
     "@typescript-eslint/parser": "^4.0.0",
@@ -40,12 +42,16 @@
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.0.0",
+    "jest": "^27.3.1",
+    "jest-localstorage-mock": "^2.4.18",
+    "jest-webextension-mock": "^3.7.19",
     "rollup": "^2.58.3",
     "rollup-plugin-cleaner": "^1.0.0",
     "rollup-plugin-delete": "^2.0.0",
     "rollup-plugin-dts": "^4.0.0",
     "rollup-plugin-typescript2": "^0.30.0",
     "svelte": "^3.44.0",
+    "ts-jest": "^27.0.7",
     "tslib": "^2.3.1",
     "typescript": "^4"
   },
