@@ -3,7 +3,6 @@ import dts from 'rollup-plugin-dts';
 import cleaner from 'rollup-plugin-cleaner';
 import pkg from './package.json';
 import del from 'rollup-plugin-delete';
-import { terser } from 'rollup-plugin-terser';
 
 const config = [
   {
@@ -12,11 +11,6 @@ const config = [
       {
         file: pkg.main,
         format: 'cjs'
-      },
-      {
-        file: './dist/index.min.js',
-        format: 'cjs',
-        plugins: [terser()]
       }
     ],
     plugins: [

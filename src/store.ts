@@ -1,5 +1,7 @@
-import { writable, Writable, Updater } from 'svelte/store';
-import { storageMV2, StorageBackend } from './storage-backend';
+import type { Writable, Updater } from 'svelte/store';
+import type { StorageBackend } from './storage-backend';
+import { writable } from 'svelte/store';
+import { storageMV2 } from './storage-backend';
 
 /**
  * Svelte Writable store that is synchronized to the storage backend.
@@ -85,7 +87,7 @@ function syncStore<T>(
   };
 }
 
-export interface WebExtStorage {
+export interface WebExtStores {
   /**
    * Create new SyncStore.
    * @param key Storage key.
@@ -103,13 +105,13 @@ export interface WebExtStorage {
 }
 
 /**
- * Factory function for WebExtStorage objects.
+ * Factory function for WebExtStores objects.
  * @param backend StorageBackend to connect to.
- * @returns WebExtStorage object.
+ * @returns WebExtStores object.
  */
-export function webExtStorage(
+export function webExtStores(
   backend: StorageBackend = storageMV2()
-): WebExtStorage {
+): WebExtStores {
   const stores: Map<string, SyncStore<any>> = new Map();
 
   backend.addOnChangedListener((changes) => {

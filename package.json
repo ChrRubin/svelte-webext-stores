@@ -1,7 +1,28 @@
 {
   "name": "svelte-webext-store",
   "version": "0.0.1",
-  "author": "ChrRubin",
+  "description": "Svelte stores that synchronizes to WebExtension storage.",
+  "keywords": [
+    "svelte",
+    "store",
+    "webextension",
+    "webext",
+    "firefox",
+    "chrome",
+    "chrome-extension",
+    "mv3",
+    "browser"
+  ],
+  "homepage": "https://github.com/ChrRubin/svelte-webext-store",
+  "bugs": "https://github.com/ChrRubin/svelte-webext-store/issues",
+  "author": {
+    "name": "ChrRubin",
+    "url": "https://github.com/ChrRubin"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ChrRubin/svelte-webext-store"
+  },
   "license": "MIT",
   "scripts": {
     "build": "rollup -c"
@@ -11,6 +32,7 @@
   "devDependencies": {
     "@tsconfig/svelte": "^2.0.1",
     "@types/chrome": "^0.0.161",
+    "@types/webextension-polyfill": "^0.8.1",
     "@typescript-eslint/eslint-plugin": "^4.0.1",
     "@typescript-eslint/parser": "^4.0.0",
     "eslint": "^7.12.1",
@@ -22,10 +44,12 @@
     "rollup-plugin-cleaner": "^1.0.0",
     "rollup-plugin-delete": "^2.0.0",
     "rollup-plugin-dts": "^4.0.0",
-    "rollup-plugin-terser": "^7.0.2",
     "rollup-plugin-typescript2": "^0.30.0",
     "svelte": "^3.44.0",
     "tslib": "^2.3.1",
     "typescript": "^4"
+  },
+  "peerDependencies": {
+    "svelte": "^3.0.0"
   }
 }
