@@ -1,7 +1,8 @@
 export {
   SyncStore,
-  WebExtStores as WebExtStorage,
-  webExtStores as webExtStorage
+  WebExtStores,
+  webExtStores,
+  MigrationStrategy
 } from './store';
 
 export {

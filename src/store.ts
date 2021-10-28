@@ -4,7 +4,7 @@ import { writable } from 'svelte/store';
 import { storageMV2 } from './storage-backend';
 
 /**
- * Svelte Writable store that is synchronized to the storage backend.
+ * Writable store that is synchronized to the storage backend.
  */
 export interface SyncStore<T> extends Writable<T> {
   /**
@@ -22,51 +22,48 @@ export interface SyncStore<T> extends Writable<T> {
   set: (value: T) => Promise<void>;
   update: (updater: Updater<T>) => Promise<void>;
   /**
-   * Whether store updates when storage value is updated outside of the
+   * Whether store is updated when storage value is updated outside of the
    * current context.
    */
   readonly syncAcrossSessions: boolean;
+  readonly key: string;
 }
 
-/**
- * Factory function for SyncStore objects.
- * @param key Storage key.
- * @param defaultValue Store default value.
- * @param backend StorageBackend object.
- * @param syncAcrossSessions Whether store updates when storage value is
- * updated outside of the current context
- * @returns SyncStore object.
- */
 function syncStore<T>(
   key: string,
-  defaultValue: T | null,
+  defaultValue: T,
   backend: StorageBackend,
-  syncAcrossSessions: boolean
-): SyncStore<T | null> {
-  let currentValue: T | null = defaultValue;
+  syncAcrossSessions: boolean,
+  skipInitialUpdate = false
+): SyncStore<T> {
+  let currentValue: T = defaultValue;
   const store = writable(defaultValue);
 
-  function get(): T | null {
+  function get(): T {
     return currentValue;
   }
 
-  function setStore(value: T | null): void {
+  function setStore(value: T): void {
     store.set(value);
     currentValue = value;
   }
 
-  async function set(value: T | null): Promise<void> {
+  async function set(value: T): Promise<void> {
     setStore(value);
     await backend.set(key, value);
   }
 
-  async function update(updater: Updater<T | null>): Promise<void> {
+  async function update(updater: Updater<T>): Promise<void> {
     const result = updater(currentValue);
     await set(result);
   }
 
   async function updateFromBackend(): Promise<void> {
     const value = await backend.get<T>(key);
+    if (value === undefined) {
+      await backend.set(key, defaultValue);
+      return;
+    }
     setStore(value);
   }
 
@@ -74,7 +71,8 @@ function syncStore<T>(
     await set(defaultValue);
   }
 
-  updateFromBackend().catch((e) => console.error(e));
+  // Initial storage backend check
+  if (!skipInitialUpdate) updateFromBackend().catch((e) => console.error(e));
 
   return {
     get,
@@ -83,8 +81,58 @@ function syncStore<T>(
     subscribe: store.subscribe,
     updateFromBackend,
     reset,
-    syncAcrossSessions
+    syncAcrossSessions,
+    key
   };
+}
+
+/**
+ * Writable store that is synchronized to the storage backend, and also allows
+ * ease of migrating storage values from an older version to a newer version.
+ */
+interface VersionedSyncStore<T> extends SyncStore<T> { }
+
+/**
+ * @template T Current/New value type.
+ */
+export interface MigrationStrategy<T> {
+  /**
+   * Old version number to match.
+   */
+  oldVersion: number;
+  /**
+   * Function for migrating VersionedSyncStore storage values.
+   * @template O Old value type.
+   * @param oldValue Old value.
+   * @returns New value.
+   */
+  migrationFunction: <O>(oldValue: O) => T;
+}
+
+function versionedSyncStore<T>(
+  key: string,
+  defaultValue: T,
+  backend: StorageBackend,
+  syncAcrossSessions: boolean,
+  version: number,
+  separator: string,
+  migrations: Array<MigrationStrategy<T>>
+): VersionedSyncStore<T> {
+  const currentKey = key.concat(separator, version.toString());
+  const ss = syncStore(currentKey, defaultValue, backend, syncAcrossSessions, true);
+
+  migrations.forEach((strategy) => {
+    (async () => {
+      const oldKey = key.concat(separator, strategy.oldVersion.toString());
+      const oldValue = await backend.get(oldKey);
+      if (oldValue === undefined) return;
+      const newValue = strategy.migrationFunction(oldValue);
+      await ss.set(newValue);
+      await backend.remove(oldKey);
+    })().catch((e) => console.error(e));
+  });
+
+  return ss;
 }
 
 export interface WebExtStores {
@@ -92,21 +140,41 @@ export interface WebExtStores {
    * Create new SyncStore.
    * @param key Storage key.
    * @param defaultValue Store default value.
-   * @param syncAcrossSessions Whether store updates when storage value is
-   * updated outside of the current context.
+   * @param syncAcrossSessions Whether store is updated when storage value is
+   * updated outside of the current context. Default: `true`.
+   * @returns SyncStore object.
    */
   newSyncStore: <T>(
-    key: string, defaultValue: T, syncAcrossSessions: boolean
-  ) => SyncStore<T | null>;
+    key: string, defaultValue: T, syncAcrossSessions?: boolean
+  ) => SyncStore<T>;
   /**
    * Perform clean up operations.
    */
   cleanUp: () => void;
+  /**
+   * Create new VersionedSyncStore.
+   * @param key Storage key.
+   * @param defaultValue Store default value.
+   * @param syncAcrossSessions Whether store is updated when storage value is
+   * updated outside of the current context. Default: `true`.
+   * @param version Current version number. Default: `0`.
+   * @param separator Separator between key and version. Default: `'$$'`.
+   * @param migrations Array of MigrationStrategy. Default: Empty array.
+   * @returns VersionedSyncStore object.
+   */
+  newVersionedSyncStore: <T>(
+    key: string,
+    defaultValue: T,
+    syncAcrossSessions?: boolean,
+    version?: number,
+    separator?: string,
+    migrations?: Array<MigrationStrategy<T>>
+  ) => VersionedSyncStore<T>;
 }
 
 /**
  * Factory function for WebExtStores objects.
- * @param backend StorageBackend to connect to.
+ * @param backend StorageBackend to connect to. Default: `storageMV2()`.
  * @returns WebExtStores object.
  */
 export function webExtStores(
@@ -124,11 +192,24 @@ export function webExtStores(
 
   function newSyncStore<T>(
     key: string, defaultValue: T, syncAcrossSessions = true
-  ): SyncStore<T | null> {
+  ): SyncStore<T> {
     const store = syncStore(key, defaultValue, backend, syncAcrossSessions);
     stores.set(key, store);
     return store;
   }
 
-  return { newSyncStore, cleanUp: backend.cleanUp };
+  function newVersionedSyncStore<T>(
+    key: string,
+    defaultValue: T,
+    syncAcrossSessions = true,
+    version = 0,
+    separator = '$$',
+    migrations: Array<MigrationStrategy<T>> = []
+  ): VersionedSyncStore<T> {
+    const store = versionedSyncStore(key, defaultValue, backend, syncAcrossSessions, version, separator, migrations);
+    stores.set(store.key, store);
+    return store;
+  }
+
+  return { newSyncStore, cleanUp: backend.cleanUp, newVersionedSyncStore };
 }

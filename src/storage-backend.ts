@@ -4,7 +4,7 @@ type StorageArea = 'local' | 'sync' | 'managed';
 type WebExtType = 'webExt' | 'chrome';
 type Resolve<T> = (value: T) => void;
 type Reject = (reason?: any) => void;
-interface Changes { [key: string]: chrome.storage.StorageChange }
+type Changes = Record<string, chrome.storage.StorageChange>;
 type OnChangedListener = (changes: Changes, areaName: StorageArea) => void;
 type OnChangedCallback = (changes: Changes) => void;
 
@@ -16,7 +16,7 @@ export interface StorageBackend {
    * Get value from storage backend.
    * @param key Storage key.
    */
-  get: <T>(key: string) => Promise<T | null>;
+  get: <T>(key: string) => Promise<T | undefined>;
   /**
    * Set value in storage backend.
    * @param key Storage key.
@@ -32,6 +32,10 @@ export interface StorageBackend {
    * Perform clean up operations.
    */
   cleanUp: () => void;
+  /**
+   * Remove item with given key from storage.
+   */
+  remove: (key: string) => Promise<void>;
 }
 
 interface WebExtStorage {
@@ -109,7 +113,16 @@ export function storageMV2(area: StorageArea = 'local'): StorageBackend {
     );
   }
 
-  return { get, set, addOnChangedListener, cleanUp };
+  async function remove(key: string): Promise<void> {
+    return await new Promise(
+      (resolve, reject) => storageArea.remove(
+        key,
+        () => resolveCallback(undefined, resolve, reject)
+      )
+    );
+  }
+
+  return { get, set, addOnChangedListener, cleanUp, remove };
 }
 
 function storageWebExtShared(type: WebExtType, area: StorageArea): StorageBackend {
@@ -127,7 +140,11 @@ function storageWebExtShared(type: WebExtType, area: StorageArea): StorageBacken
     return await storageArea.set({ [key]: value });
   }
 
-  return { get, set, addOnChangedListener, cleanUp };
+  async function remove(key: string): Promise<void> {
+    return await storageArea.remove(key);
+  }
+
+  return { get, set, addOnChangedListener, cleanUp, remove };
 }
 
 /**
@@ -164,9 +181,9 @@ export function storageLegacy(): StorageBackend {
   let callbacks: OnChangedCallback[] = [];
   const listeners: Array<(event: StorageEvent) => void> = [];
 
-  async function get<T>(key: string): Promise<T | null> {
+  async function get<T>(key: string): Promise<T | undefined> {
     const result = localStorage.getItem(key);
-    if (result == null) return result;
+    if (result == null) return undefined;
     return JSON.parse(result);
   }
 
@@ -200,5 +217,9 @@ export function storageLegacy(): StorageBackend {
     listeners.forEach((l) => window.removeEventListener('storage', l));
   }
 
-  return { get, set, addOnChangedListener, cleanUp };
+  async function remove(key: string): Promise<void> {
+    localStorage.removeItem(key);
+  }
+
+  return { get, set, addOnChangedListener, cleanUp, remove };
 }
