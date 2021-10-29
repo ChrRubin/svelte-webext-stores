@@ -29,17 +29,17 @@ export interface SyncStore<T> extends Writable<T> {
   readonly key: string;
 }
 
-async function syncStore<T>(
+function syncStore<T>(
   key: string,
   defaultValue: T,
   backend: StorageBackend,
-  syncAcrossSessions: boolean,
-  skipInitialUpdate = false
-): Promise<SyncStore<T>> {
+  syncAcrossSessions: boolean
+): SyncStore<T> {
   let currentValue: T = defaultValue;
   const store = writable(defaultValue);
 
   async function get(): Promise<T> {
+    await updateFromBackend();
     return currentValue;
   }
 
@@ -70,9 +70,6 @@ async function syncStore<T>(
   async function reset(): Promise<void> {
     await set(defaultValue);
   }
-
-  // Initial storage backend check
-  if (!skipInitialUpdate) await updateFromBackend();
 
   return {
     get,
@@ -119,7 +116,7 @@ async function versionedSyncStore<T>(
   migrations: Array<MigrationStrategy<T>>
 ): Promise<VersionedSyncStore<T>> {
   const currentKey = key.concat(separator, version.toString());
-  const ss = await syncStore(currentKey, defaultValue, backend, syncAcrossSessions, true);
+  const ss = syncStore(currentKey, defaultValue, backend, syncAcrossSessions);
 
   for (const strategy of migrations) {
     const oldKey = key.concat(separator, strategy.oldVersion.toString());
@@ -144,7 +141,7 @@ export interface WebExtStores {
    */
   newSyncStore: <T>(
     key: string, defaultValue: T, syncAcrossSessions?: boolean
-  ) => Promise<SyncStore<T>>;
+  ) => SyncStore<T>;
   /**
    * Perform clean up operations.
    */
@@ -192,10 +189,10 @@ export function webExtStores(
     });
   });
 
-  async function newSyncStore<T>(
+  function newSyncStore<T>(
     key: string, defaultValue: T, syncAcrossSessions = true
-  ): Promise<SyncStore<T>> {
-    const store = await syncStore(key, defaultValue, backend, syncAcrossSessions);
+  ): SyncStore<T> {
+    const store = syncStore(key, defaultValue, backend, syncAcrossSessions);
     stores.set(key, store);
     return store;
   }
