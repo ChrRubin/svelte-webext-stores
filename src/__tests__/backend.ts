@@ -1,11 +1,18 @@
-import type { StorageBackend, StorageArea, WebStorageType } from '../storage-backend';
-import { storageMV2, storageMV3, storageWebExt, storageLegacy } from '../storage-backend';
+import {
+  StorageBackend,
+  WebExtStorageArea,
+  WebStorageType,
+  StorageMV2,
+  StorageMV3,
+  StorageWebExt,
+  StorageLegacy
+} from '../storage-backend';
 
-const webExtAreas: StorageArea[] = ['sync', 'local', 'managed'];
+const webExtAreas: WebExtStorageArea[] = ['sync', 'local', 'managed'];
 const webStorageType: WebStorageType[] = ['local', 'session'];
 
 async function testBackend(backend: StorageBackend): Promise<void> {
-  beforeEach(async () => await Promise.all([
+  afterEach(async () => await Promise.all([
     backend.clear(), backend.cleanUp()
   ]));
 
@@ -49,19 +56,19 @@ async function testBackend(backend: StorageBackend): Promise<void> {
 }
 
 describe.each([
-  ['MV2', storageMV2, webExtAreas],
-  ['MV3', storageMV3, webExtAreas],
-  ['WebExtensions', storageWebExt, webExtAreas]
-])('Backend: %s', (name, backendFn, areas) => {
+  ['MV2', StorageMV2, webExtAreas],
+  ['MV3', StorageMV3, webExtAreas],
+  ['WebExtensions', StorageWebExt, webExtAreas]
+])('Backend: %s', (name, BackendConstructor, areas) => {
   describe.each(areas)('Area: %s', (area) => {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    testBackend(backendFn(area));
+    testBackend(new BackendConstructor(area));
   });
 });
 
 describe('Backend: Legacy', () => {
   describe.each(webStorageType)('Area: %s', (area) => {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    testBackend(storageLegacy(area));
+    testBackend(new StorageLegacy(area));
   });
 });

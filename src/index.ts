@@ -1,14 +1,10 @@
 export {
-  SyncStore,
-  WebExtStores,
-  webExtStores,
-  MigrationStrategy
-} from './store';
-
-export {
   StorageBackend,
-  storageMV2,
-  storageMV3,
-  storageWebExt,
-  storageLegacy
+  StorageMV2,
+  StorageMV3,
+  StorageWebExt,
+  StorageLegacy
 } from './storage-backend';
+
+export { SyncStore } from './sync-store';
+export { WebExtStores } from './web-ext-stores';

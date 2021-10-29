@@ -1,18 +1,13 @@
 import type * as browser from 'webextension-polyfill';
 
-export type StorageArea = 'local' | 'sync' | 'managed';
+export type WebExtStorageArea = 'local' | 'sync' | 'managed';
 export type WebStorageType = 'session' | 'local';
 export type StorageChanges = Record<string, chrome.storage.StorageChange>;
 export type OnChangedCallback = (changes: StorageChanges) => void;
 
-type WebExtType = 'webExt' | 'chrome';
-type Resolve<T> = (value: T) => void;
-type Reject = (reason?: any) => void;
-type OnChangedListener = (changes: StorageChanges, areaName: StorageArea) => void;
+type OnChangedListener = (changes: StorageChanges, areaName: WebExtStorageArea) => void;
 
-/**
- * Interface contract for StorageBackend objects.
- */
+/** Interface contract for StorageBackend objects. */
 export interface StorageBackend {
   /**
    * Get value from storage backend.
@@ -30,17 +25,11 @@ export interface StorageBackend {
    * @param callback Callback function when onChanged event is triggered.
    */
   addOnChangedListener: (callback: OnChangedCallback) => void;
-  /**
-   * Perform clean up operations.
-   */
+  /** Perform clean up operations. */
   cleanUp: () => void;
-  /**
-   * Remove item with given key from storage.
-   */
+  /** Remove item with given key from storage. */
   remove: (key: string) => Promise<void>;
-  /**
-   * Clears all stored values from storage backend.
-   */
+  /** Clears all stored values from storage backend. */
   clear: () => Promise<void>;
 }
 
@@ -54,9 +43,9 @@ interface ChromeStorage extends Omit<WebExtStorage, 'storageArea'> {
   storageArea: chrome.storage.StorageArea;
 }
 
-function initWebExtStorage(type: 'webExt', area: StorageArea): WebExtStorage;
-function initWebExtStorage(type: 'chrome', area: StorageArea): ChromeStorage;
-function initWebExtStorage(type: WebExtType, area: StorageArea): WebExtStorage | ChromeStorage {
+function initWebExtStorage(type: 'webExt', area: WebExtStorageArea): WebExtStorage;
+function initWebExtStorage(type: 'chrome', area: WebExtStorageArea): ChromeStorage;
+function initWebExtStorage(type: 'webExt' | 'chrome', area: WebExtStorageArea): WebExtStorage | ChromeStorage {
   const listeners: OnChangedListener[] = [];
   // @ts-expect-error Ignore browser namespace error
   const storage = type === 'webExt' ? browser.storage : chrome.storage;
@@ -78,144 +67,160 @@ function initWebExtStorage(type: WebExtType, area: StorageArea): WebExtStorage |
   return { storageArea, addOnChangedListener, cleanUp };
 }
 
-function resolveCallback<T>(value: T, res: Resolve<T>, rej: Reject): void {
-  const error = chrome.runtime.lastError;
-  if (error != null) {
-    rej(error);
-    return;
+/** StorageBackend for Chrome Manifest Version 2 (callback API). */
+export class StorageMV2 implements StorageBackend {
+  private readonly _storageArea;
+  readonly addOnChangedListener;
+  readonly cleanUp;
+
+  /**
+   * @param area Type of StorageArea to use.
+   * Valid values: `'local'` | `'sync'` | `'managed'`
+   * Default: `'local'`
+   */
+  constructor(area: WebExtStorageArea = 'local') {
+    const {
+      storageArea, addOnChangedListener, cleanUp
+    } = initWebExtStorage('chrome', area);
+    this._storageArea = storageArea;
+    this.addOnChangedListener = addOnChangedListener;
+    this.cleanUp = cleanUp;
   }
-  res(value);
-}
 
-/**
- * Factory function for Manifest Version 2 (callback API) storage backend.
- *
- * @param area Type of StorageArea to use.
- * Valid values: `'local'` | `'sync'` | `'managed'`.
- * Default: `'local'`
- *
- * @returns StorageBackend object.
- */
-export function storageMV2(area: StorageArea = 'local'): StorageBackend {
-  const {
-    storageArea, addOnChangedListener, cleanUp
-  } = initWebExtStorage('chrome', area);
+  _resolveCallback<T>(
+    value: T, resolve: (value: T) => void, reject: (reason?: any) => void
+  ): void {
+    const error = chrome.runtime.lastError;
+    if (error != null) {
+      reject(error);
+      return;
+    }
+    resolve(value);
+  }
 
-  async function get<T>(key: string): Promise<T> {
+  async get<T>(key: string): Promise<T> {
     return await new Promise(
-      (resolve, reject) => storageArea.get(
+      (resolve, reject) => this._storageArea.get(
         key,
-        (result) => resolveCallback(result[key], resolve, reject)
+        (result) => this._resolveCallback(result[key], resolve, reject)
       )
     );
   }
 
-  async function set<T>(key: string, value: T): Promise<void> {
+  async set<T>(key: string, value: T): Promise<void> {
     return await new Promise(
-      (resolve, reject) => storageArea.set(
+      (resolve, reject) => this._storageArea.set(
         { [key]: value },
-        () => resolveCallback(undefined, resolve, reject)
+        () => this._resolveCallback(undefined, resolve, reject)
       )
     );
   }
 
-  async function remove(key: string): Promise<void> {
+  async remove(key: string): Promise<void> {
     return await new Promise(
-      (resolve, reject) => storageArea.remove(
+      (resolve, reject) => this._storageArea.remove(
         key,
-        () => resolveCallback(undefined, resolve, reject)
+        () => this._resolveCallback(undefined, resolve, reject)
       )
     );
   }
 
-  async function clear(): Promise<void> {
+  async clear(): Promise<void> {
     return await new Promise(
-      (resolve, reject) => storageArea.clear(
-        () => resolveCallback(undefined, resolve, reject)
+      (resolve, reject) => this._storageArea.clear(
+        () => this._resolveCallback(undefined, resolve, reject)
       )
     );
   }
-
-  return { get, set, addOnChangedListener, cleanUp, remove, clear };
 }
 
-function storageWebExtShared(type: WebExtType, area: StorageArea): StorageBackend {
-  const {
-    storageArea, addOnChangedListener, cleanUp
-  } = type === 'webExt'
-    ? initWebExtStorage('webExt', area)
-    : initWebExtStorage('chrome', area);
+class storageWebExtShared implements StorageBackend {
+  private readonly _storageArea;
+  readonly addOnChangedListener;
+  readonly cleanUp;
 
-  async function get<T>(key: string): Promise<T> {
-    return await storageArea.get(key).then((result) => result[key]);
+  constructor(type: 'webExt' | 'chrome', area: WebExtStorageArea) {
+    const {
+      storageArea, addOnChangedListener, cleanUp
+    } = type === 'webExt'
+      ? initWebExtStorage('webExt', area)
+      : initWebExtStorage('chrome', area);
+    this._storageArea = storageArea;
+    this.addOnChangedListener = addOnChangedListener;
+    this.cleanUp = cleanUp;
   }
 
-  async function set<T>(key: string, value: T): Promise<void> {
-    return await storageArea.set({ [key]: value });
+  async get<T>(key: string): Promise<T> {
+    return await this._storageArea.get(key).then((result) => result[key]);
   }
 
-  async function remove(key: string): Promise<void> {
-    return await storageArea.remove(key);
+  async set<T>(key: string, value: T): Promise<void> {
+    return await this._storageArea.set({ [key]: value });
   }
 
-  async function clear(): Promise<void> {
-    return await storageArea.clear();
+  async remove(key: string): Promise<void> {
+    return await this._storageArea.remove(key);
   }
 
-  return { get, set, addOnChangedListener, cleanUp, remove, clear };
+  async clear(): Promise<void> {
+    return await this._storageArea.clear();
+  }
+}
+
+/** StorageBackend for Chrome Manifest Version 3 (Promise API). */
+export class StorageMV3 extends storageWebExtShared {
+  /**
+   * @param area Type of StorageArea to use.
+   * Valid values: `'local'` | `'sync'` | `'managed'`
+   * Default: `'local'`
+   */
+  constructor(area: WebExtStorageArea = 'local') {
+    super('chrome', area);
+  }
+}
+
+/** StorageBackend for Mozilla WebExtension (browser API). */
+export class StorageWebExt extends storageWebExtShared {
+  /**
+   * @param area Type of StorageArea to use.
+   * Valid values: `'local'` | `'sync'` | `'managed'`
+   * Default: `'local'`
+   */
+  constructor(area: WebExtStorageArea = 'local') {
+    super('webExt', area);
+  }
 }
 
 /**
- * Factory function for Manifest Version 3 (Promise API) storage backend.
- *
- * @param area Type of StorageArea to use.
- * Valid values: `'local'` | `'sync'` | `'managed'`.
- * Default: `'local'`
- *
- * @returns StorageBackend object.
+ * StorageBackend for legacy/non-WebExtension
+ * (`localStorage` or `sessionStorage`).
  */
-export function storageMV3(area: StorageArea = 'local'): StorageBackend {
-  return storageWebExtShared('chrome', area);
-}
+export class StorageLegacy implements StorageBackend {
+  private readonly _storage;
+  private _callbacks: OnChangedCallback[];
+  private readonly _listeners: Array<(event: StorageEvent) => void>;
 
-/**
- * Factory function for Mozilla's WebExtension (browser API) storage backend.
- *
- * @param area Type of StorageArea to use.
- * Valid values: `'local'` | `'sync'` | `'managed'`.
- * Default: `'local'`
- *
- * @returns StorageBackend object.
- */
-export function storageWebExt(area: StorageArea = 'local'): StorageBackend {
-  return storageWebExtShared('webExt', area);
-}
+  /**
+   * @param area Type of StorageArea to use.
+   * Valid values: `'local'` | `'session'`
+   * Default: `'local'`
+   */
+  constructor(area: WebStorageType) {
+    this._storage = area === 'local' ? localStorage : sessionStorage;
+    this._callbacks = [];
+    this._listeners = [];
+  }
 
-/**
- * Factory function for legacy/non-WebExtension storage backend
- * (`window.localStorage`, `window.sessionStorage`).
- * @param area Type of Web Storage to use.
- * Valid values: `'local'` | `'session'`
- * Default: `'local'`
- * @returns StorageBackend object.
- */
-export function storageLegacy(area: WebStorageType = 'local'): StorageBackend {
-  const storage = area === 'local' ? localStorage : sessionStorage;
-
-  let callbacks: OnChangedCallback[] = [];
-  const listeners: Array<(event: StorageEvent) => void> = [];
-
-  async function get<T>(key: string): Promise<T | undefined> {
-    const result = storage.getItem(key);
+  async get<T>(key: string): Promise<T | undefined> {
+    const result = this._storage.getItem(key);
     if (result == null) return undefined;
     return JSON.parse(result);
   }
 
-  async function set<T>(key: string, value: T): Promise<void> {
-    const oldValue = await get(key);
-    storage.setItem(key, JSON.stringify(value));
-    // storage window event only triggers for storage changes outside of current window
-    callbacks.forEach((callback) => {
+  async set<T>(key: string, value: T): Promise<void> {
+    const oldValue = await this.get(key);
+    this._storage.setItem(key, JSON.stringify(value));
+    this._callbacks.forEach((callback) => {
       const changes = {
         [key]: { oldValue, newValue: value }
       };
@@ -223,7 +228,7 @@ export function storageLegacy(area: WebStorageType = 'local'): StorageBackend {
     });
   }
 
-  function addOnChangedListener(callback: OnChangedCallback): void {
+  addOnChangedListener(callback: OnChangedCallback): void {
     const listener = (event: StorageEvent): void => {
       if (event.key == null) return;
       const changes = {
@@ -232,22 +237,20 @@ export function storageLegacy(area: WebStorageType = 'local'): StorageBackend {
       callback(changes);
     };
     window.addEventListener('storage', listener);
-    callbacks.push(callback);
-    listeners.push(listener);
+    this._callbacks.push(callback);
+    this._listeners.push(listener);
   }
 
-  function cleanUp(): void {
-    callbacks = [];
-    listeners.forEach((l) => window.removeEventListener('storage', l));
+  cleanUp(): void {
+    this._callbacks = [];
+    this._listeners.forEach((l) => window.removeEventListener('storage', l));
   }
 
-  async function remove(key: string): Promise<void> {
-    storage.removeItem(key);
+  async remove(key: string): Promise<void> {
+    this._storage.removeItem(key);
   }
 
-  async function clear(): Promise<void> {
-    storage.clear();
+  async clear(): Promise<void> {
+    this._storage.clear();
   }
-
-  return { get, set, addOnChangedListener, cleanUp, remove, clear };
 }
