@@ -6,5 +6,6 @@ export {
   StorageLegacy
 } from './storage-backend';
 
-export { SyncStore } from './sync-store';
+export { ISyncStore, SyncStore } from './sync-store';
 export { WebExtStores } from './web-ext-stores';
+export { VersionedSyncStore, MigrationStrategy } from './ver-sync-store';

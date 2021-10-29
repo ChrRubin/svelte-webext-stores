@@ -1,10 +1,8 @@
 import type { StorageBackend } from './storage-backend';
-import { writable, Readable } from 'svelte/store';
+import { writable, Readable, Subscriber, Unsubscriber } from 'svelte/store';
 
 /** Interface contract for stores that is synchronized to storage. */
 export interface ISyncStore<T> extends Readable<T> {
-  /** Update store value from storage backend. */
-  updateFromBackend: () => Promise<void>;
   /**
    * Set value and inform subscribers.
    * @param value to set
@@ -17,40 +15,55 @@ export interface ISyncStore<T> extends Readable<T> {
    * e.g. storage value is changed by another page.
    */
   readonly syncFromExternal: boolean;
+  /** Storage item key. */
   readonly key: string;
 }
 
 /** Store that is synchronized to the storage backend. */
 export class SyncStore<T> implements ISyncStore<T> {
   readonly key;
-  private readonly _defaultValue;
-  private readonly _backend;
+  readonly defaultValue;
+  readonly backend;
   readonly syncFromExternal;
-  private _currentValue;
-  private readonly _store;
-  readonly subscribe;
+  protected _currentValue;
+  protected readonly _store;
+  protected _isReady;
 
   /**
    * @param key Item key.
    * @param defaultValue Item default value.
    * @param backend Storage backend to use.
-   * @param syncAcrossSessions Whether store should be updated when storage
+   * @param syncFromExternal Whether store should be updated when storage
    * value is updated externally.
    */
   constructor(
     key: string,
     defaultValue: T,
     backend: StorageBackend,
-    syncAcrossSessions: boolean
+    syncFromExternal: boolean
   ) {
     this.key = key;
-    this._defaultValue = defaultValue;
-    this._backend = backend;
-    this.syncFromExternal = syncAcrossSessions;
+    this.defaultValue = defaultValue;
+    this.backend = backend;
+    this.syncFromExternal = syncFromExternal;
 
     this._currentValue = defaultValue;
     this._store = writable(defaultValue);
-    this.subscribe = this._store.subscribe;
+    this._isReady = false;
+  }
+
+  /**
+   * Ensure that any async initialization process (such as initial update
+   * from backend) has been completed.
+   *
+   * You typically don't need to manually await this unless you wish to sync
+   * the store to the storage backend before any of `get()`, `set()` or
+   * `subscribe()` is called.
+   */
+  async ready(): Promise<void> {
+    if (this._isReady) return;
+    await this._updateFromBackend();
+    this._isReady = true;
   }
 
   private _setStore(value: T): void {
@@ -60,7 +73,7 @@ export class SyncStore<T> implements ISyncStore<T> {
 
   /** Get current value after updating from backend. */
   async get(): Promise<T> {
-    await this.updateFromBackend();
+    await this.ready();
     return this._currentValue;
   }
 
@@ -70,13 +83,14 @@ export class SyncStore<T> implements ISyncStore<T> {
 
   async set(value: T): Promise<void> {
     this._setStore(value);
-    await this._backend.set(this.key, value);
+    await this.backend.set(this.key, value);
   }
 
-  async updateFromBackend(): Promise<void> {
-    const value = await this._backend.get<T>(this.key);
+  /** Update store value from storage backend. */
+  protected async _updateFromBackend(): Promise<void> {
+    const value = await this.backend.get<T>(this.key);
     if (value === undefined) {
-      await this._backend.set(this.key, this._defaultValue);
+      await this.backend.set(this.key, this.defaultValue);
       return;
     }
     this._setStore(value);
@@ -84,6 +98,13 @@ export class SyncStore<T> implements ISyncStore<T> {
 
   /** Reset store value to default value. */
   async reset(): Promise<void> {
-    await this.set(this._defaultValue);
+    await this.set(this.defaultValue);
+  }
+
+  subscribe(run: Subscriber<T>): Unsubscriber {
+    this.ready()
+      .then(() => run(this._currentValue))
+      .catch((e) => console.error(e));
+    return this._store.subscribe(run);
   }
 }

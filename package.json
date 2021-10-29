@@ -1,6 +1,6 @@
 {
   "name": "svelte-webext-stores",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Svelte stores that synchronizes to WebExtension storage.",
   "keywords": [
     "svelte",

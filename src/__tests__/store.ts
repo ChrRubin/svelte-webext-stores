@@ -1,19 +1,19 @@
-// import { SyncStore } from '../sync-store';
 import { StorageLegacy } from '../storage-backend';
 import { WebExtStores } from '../web-ext-stores';
 import { Unsubscriber } from 'svelte/store';
+import type { MigrationStrategy } from '../ver-sync-store';
+
+const backend = new StorageLegacy('session');
+const stores = new WebExtStores(backend);
+afterEach(async () => await stores._clear());
 
 describe('SyncStore', () => {
-  const backend = new StorageLegacy('session');
-  const stores = new WebExtStores(backend);
   const SyncStore = stores.newSyncStore.bind(stores);
 
   const key = 'hey';
   const value1 = 'listen';
   const value2 = 'watch out';
   const value3 = 'take this';
-
-  afterEach(async () => await stores._clear());
 
   test('Default value', async () => {
     const store = SyncStore(key, value1);
@@ -28,7 +28,8 @@ describe('SyncStore', () => {
 
   test('Saves to storage', async () => {
     const store = SyncStore(key, value1);
-    // expect(await backend.get(key)).toBe(value1);
+    await store.ready();
+    expect(await backend.get(key)).toBe(value1);
     await store.set(value2);
     expect(await backend.get(key)).toBe(value2);
   });
@@ -72,5 +73,37 @@ describe('SyncStore', () => {
     const store = SyncStore(key, value1);
     unSub = store.subscribe(callback);
     store.set(value2).catch((e) => console.error(e));
+  });
+});
+
+describe('VersionedSyncStore', () => {
+  const VSS = stores.newVersionedSyncStore.bind(stores);
+
+  const key = 'arch';
+  const value1 = 64;
+  const value2 = 86;
+  const value3 = 'x64';
+  const value4 = 'x86';
+
+  test('Normal SyncStore functionality', async () => {
+    const store = VSS(key, value1);
+    expect(await store.get()).toBe(value1);
+    expect(await backend.get(store.key)).toBe(value1);
+    await store.set(value2);
+    expect(await store.get()).toBe(value2);
+    expect(await backend.get(store.key)).toBe(value2);
+  });
+
+  test('Migrate', async () => {
+    const store1 = VSS(key, value1, true, 0, '$$');
+    await store1.set(value2);
+    const strat: MigrationStrategy<string> = {
+      oldVersion: 0,
+      migrate: (v: number) => `x${v.toString()}`
+    };
+    const store2 = VSS(key, value3, true, 1, '$$', [strat]);
+    expect(await store2.get()).toBe(value4);
+    expect(await backend.get(store2.key)).toBe(value4);
+    expect(await backend.get(store1.key)).toBeUndefined();
   });
 });

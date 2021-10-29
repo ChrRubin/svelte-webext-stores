@@ -1,5 +1,6 @@
 import { StorageBackend, StorageMV2 } from './storage-backend';
 import { ISyncStore, SyncStore } from './sync-store';
+import { VersionedSyncStore, MigrationStrategy } from './ver-sync-store';
 
 /**
  * Handler for registering stores that are synced to storage.
@@ -35,16 +36,48 @@ export class WebExtStores {
    * Registers and returns a new SyncStore.
    * @param key Storage key.
    * @param defaultValue Store's default value.
-   * @param syncAcrossSessions Whether store should be updated when storage
+   * @param syncFromExternal Whether store should be updated when storage
    * value is updated externally. Default: `true`.
    * @returns SyncStore
    */
   newSyncStore<T>(
-    key: string, defaultValue: T, syncAcrossSessions = true
+    key: string, defaultValue: T, syncFromExternal = true
   ): SyncStore<T> {
     const store =
-      new SyncStore(key, defaultValue, this._backend, syncAcrossSessions);
+      new SyncStore(key, defaultValue, this._backend, syncFromExternal);
     this._stores.set(key, store);
+    return store;
+  }
+
+  /**
+   * Registers and returns a new VersionedSyncStore.
+   * @param key Storage key.
+   * @param defaultValue Store default value.
+   * @param syncFromExternal Whether store is updated when storage value is
+   * updated outside of the current context. Default: `true`.
+   * @param version Current version number. Default: `0`.
+   * @param separator Separator between key and version. Default: `'$$'`.
+   * @param migrations Map of MigrationFunctions. Default: Empty array.
+   * @returns VersionedSyncStore object.
+   */
+  newVersionedSyncStore<T>(
+    key: string,
+    defaultValue: T,
+    syncFromExternal = true,
+    version = 0,
+    separator = '$$',
+    migrations: Array<MigrationStrategy<T>> = []
+  ): VersionedSyncStore<T> {
+    const store = new VersionedSyncStore(
+      key,
+      defaultValue,
+      this._backend,
+      syncFromExternal,
+      version,
+      separator,
+      migrations
+    );
+    this._stores.set(store.key, store);
     return store;
   }
 

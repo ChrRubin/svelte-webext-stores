@@ -33,6 +33,9 @@ async function testBackend(backend: StorageBackend): Promise<void> {
     expect(await backend.get('asda')).toBe(undefined);
   });
 
+  // NOTE: jest-webextension-mock does not properly mock storage event listeners
+  // as of this writing.
+
   // test('addOnChangedListener()', () => {
   //   function callback(changes: StorageChanges): void {
   //     expect(changes).toBe({ map: { oldValue: 'wasd', newValue: 'hjkl' } });
