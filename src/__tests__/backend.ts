@@ -1,5 +1,5 @@
 import {
-  StorageBackend,
+  IStorageBackend,
   WebExtStorageArea,
   WebStorageType,
   StorageMV2,
@@ -11,7 +11,7 @@ import {
 const webExtAreas: WebExtStorageArea[] = ['sync', 'local', 'managed'];
 const webStorageType: WebStorageType[] = ['local', 'session'];
 
-async function testBackend(backend: StorageBackend): Promise<void> {
+async function testBackend(backend: IStorageBackend): Promise<void> {
   afterEach(async () => await Promise.all([
     backend.clear(), backend.cleanUp()
   ]));

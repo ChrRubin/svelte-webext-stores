@@ -1,4 +1,4 @@
-import type { StorageBackend } from './storage-backend';
+import type { IStorageBackend } from './storage-backend';
 import { writable, Readable, Subscriber, Unsubscriber } from 'svelte/store';
 
 /** Interface contract for stores that is synchronized to storage. */
@@ -39,7 +39,7 @@ export class SyncStore<T> implements ISyncStore<T> {
   constructor(
     key: string,
     defaultValue: T,
-    backend: StorageBackend,
+    backend: IStorageBackend,
     syncFromExternal: boolean
   ) {
     this.key = key;

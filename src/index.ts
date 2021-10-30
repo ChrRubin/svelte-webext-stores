@@ -1,5 +1,5 @@
 export {
-  StorageBackend,
+  IStorageBackend,
   StorageMV2,
   StorageMV3,
   StorageWebExt,

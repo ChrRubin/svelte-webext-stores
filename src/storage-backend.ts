@@ -7,8 +7,8 @@ export type OnChangedCallback = (changes: StorageChanges) => void;
 
 type OnChangedListener = (changes: StorageChanges, areaName: WebExtStorageArea) => void;
 
-/** Interface contract for StorageBackend objects. */
-export interface StorageBackend {
+/** Interface contract for storage backends. */
+export interface IStorageBackend {
   /**
    * Get value from storage backend.
    * @param key Storage key.
@@ -68,7 +68,7 @@ function initWebExtStorage(type: 'webExt' | 'chrome', area: WebExtStorageArea): 
 }
 
 /** StorageBackend for Chrome Manifest Version 2 (callback API). */
-export class StorageMV2 implements StorageBackend {
+export class StorageMV2 implements IStorageBackend {
   private readonly _storageArea;
   readonly addOnChangedListener;
   readonly cleanUp;
@@ -134,7 +134,7 @@ export class StorageMV2 implements StorageBackend {
   }
 }
 
-class storageWebExtShared implements StorageBackend {
+class storageWebExtShared implements IStorageBackend {
   private readonly _storageArea;
   readonly addOnChangedListener;
   readonly cleanUp;
@@ -195,7 +195,7 @@ export class StorageWebExt extends storageWebExtShared {
  * StorageBackend for legacy/non-WebExtension
  * (`localStorage` or `sessionStorage`).
  */
-export class StorageLegacy implements StorageBackend {
+export class StorageLegacy implements IStorageBackend {
   private readonly _storage;
   private _callbacks: OnChangedCallback[];
   private readonly _listeners: Array<(event: StorageEvent) => void>;

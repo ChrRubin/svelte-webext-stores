@@ -1,4 +1,4 @@
-import { StorageBackend, StorageMV2 } from './storage-backend';
+import { IStorageBackend, StorageMV2 } from './storage-backend';
 import { ISyncStore, SyncStore } from './sync-store';
 import { VersionedSyncStore, MigrationStrategy } from './ver-sync-store';
 
@@ -14,7 +14,7 @@ export class WebExtStores {
   /**
    * @param backend Storage backend to use. Default: `new StorageMV2()`.
    */
-  constructor(backend: StorageBackend = new StorageMV2()) {
+  constructor(backend: IStorageBackend = new StorageMV2()) {
     this._backend = backend;
     this._stores = new Map();
 
@@ -87,7 +87,7 @@ export class WebExtStores {
    * expects an ISyncStore implementation.
    */
   addCustomStore(
-    getStore: (backend: StorageBackend) => ISyncStore<any>
+    getStore: (backend: IStorageBackend) => ISyncStore<any>
   ): void {
     const store = getStore(this._backend);
     this._stores.set(store.key, store);

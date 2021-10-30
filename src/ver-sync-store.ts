@@ -1,4 +1,4 @@
-import type { StorageBackend } from './storage-backend';
+import type { IStorageBackend } from './storage-backend';
 import { SyncStore } from './sync-store';
 
 /**
@@ -40,7 +40,7 @@ export class VersionedSyncStore<T> extends SyncStore<T> {
   constructor(
     key: string,
     defaultValue: T,
-    backend: StorageBackend,
+    backend: IStorageBackend,
     syncFromExternal: boolean,
     version: number,
     separator: string,
