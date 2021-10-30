@@ -3,11 +3,11 @@ on:
   push:
     paths:
       - 'src/**'
+    tags-ignore:
+      - '*.*'
   pull_request:
     paths:
       - 'src/**'
-  tags-ignore:
-      - '*.*'
 jobs:
   test:
     runs-on: ubuntu-latest
