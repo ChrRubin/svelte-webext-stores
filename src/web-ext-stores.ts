@@ -11,9 +11,7 @@ export class WebExtStores {
   private readonly _backend;
   private readonly _stores: Map<string, ISyncStore<any>>;
 
-  /**
-   * @param backend Storage backend to use. Default: `new StorageMV2()`.
-   */
+  /** @param backend Storage backend to use. Default: `new StorageMV2()`. */
   constructor(backend: IStorageBackend = new StorageMV2()) {
     this._backend = backend;
     this._stores = new Map();
@@ -38,7 +36,6 @@ export class WebExtStores {
    * @param defaultValue Store's default value.
    * @param syncFromExternal Whether store should be updated when storage
    * value is updated externally. Default: `true`.
-   * @returns SyncStore
    */
   newSyncStore<T>(
     key: string, defaultValue: T, syncFromExternal = true
@@ -57,8 +54,7 @@ export class WebExtStores {
    * updated outside of the current context. Default: `true`.
    * @param version Current version number. Default: `0`.
    * @param separator Separator between key and version. Default: `'$$'`.
-   * @param migrations Map of MigrationFunctions. Default: Empty array.
-   * @returns VersionedSyncStore object.
+   * @param migrations Key-item pair for migrating values. Default: Empty object.
    */
   newVersionedSyncStore<T>(
     key: string,
@@ -66,7 +62,7 @@ export class WebExtStores {
     syncFromExternal = true,
     version = 0,
     separator = '$$',
-    migrations: Array<MigrationStrategy<T>> = []
+    migrations: MigrationStrategy<T> = {}
   ): VersionedSyncStore<T> {
     const store = new VersionedSyncStore(
       key,

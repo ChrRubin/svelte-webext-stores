@@ -3,12 +3,18 @@ import { writable, Readable, Subscriber, Unsubscriber } from 'svelte/store';
 
 /** Interface contract for stores that is synchronized to storage. */
 export interface ISyncStore<T> extends Readable<T> {
+  /** Get current value after updating from backend. */
+  get?: () => Promise<T>;
   /**
-   * Set value and inform subscribers.
+   * Set value, inform subscribers, and push to storage.
    * @param value to set
    */
   set: (value: T) => Promise<void>;
-  /** Get current value without updating from backend. */
+  /**
+   * Get current value without updating from backend.
+   *
+   * Used for comparing storage changes when syncing from storage.
+   */
   getCurrent: () => T;
   /**
    * Whether store should be updated when storage value is updated externally,
@@ -71,7 +77,6 @@ export class SyncStore<T> implements ISyncStore<T> {
     this._currentValue = value;
   }
 
-  /** Get current value after updating from backend. */
   async get(): Promise<T> {
     await this.ready();
     return this._currentValue;
@@ -103,7 +108,10 @@ export class SyncStore<T> implements ISyncStore<T> {
 
   subscribe(run: Subscriber<T>): Unsubscriber {
     this.ready()
-      .then(() => run(this._currentValue))
+      .then(() => {
+        if (typeof run !== 'function') console.log(run);
+        run(this._currentValue);
+      })
       .catch((e) => console.error(e));
     return this._store.subscribe(run);
   }

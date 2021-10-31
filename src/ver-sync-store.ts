@@ -2,19 +2,16 @@ import type { IStorageBackend } from './storage-backend';
 import { SyncStore } from './sync-store';
 
 /**
- * @template T Current/New value type
+ * Key-item pair for migrating VersionedSyncStore values.
+ *
+ * Each property must have a version number as the key, and the value a
+ * callback function that accepts the value found from the given version and
+ * returns the corresponding value for the current version.
+ *
+ * @template T Current value type
  */
 export interface MigrationStrategy<T> {
-  /**
-   * Old version number to match.
-   */
-  oldVersion: number;
-  /**
-   * Function for migrating VersionedSyncStore storage values.
-   * @param oldValue Old value.
-   * @returns New value.
-   */
-  migrate: (oldValue: any) => T;
+  [oldVersion: number]: (oldValue: any) => T;
 }
 
 /**
@@ -35,7 +32,7 @@ export class VersionedSyncStore<T> extends SyncStore<T> {
    * value is updated externally.
    * @param version Current version number.
    * @param separator Separator between key and version.
-   * @param migrations Map of MigrationFunctions.
+   * @param migrations Key-item pair for migrating values.
    */
   constructor(
     key: string,
@@ -44,7 +41,7 @@ export class VersionedSyncStore<T> extends SyncStore<T> {
     syncFromExternal: boolean,
     version: number,
     separator: string,
-    migrations: Array<MigrationStrategy<T>>
+    migrations: MigrationStrategy<T>
   ) {
     const currentKey = key.concat(separator, version.toString());
     super(currentKey, defaultValue, backend, syncFromExternal);
@@ -62,10 +59,9 @@ export class VersionedSyncStore<T> extends SyncStore<T> {
   }
 
   async migrateBackend(): Promise<void> {
-    for (const { oldVersion, migrate } of this.migrations) {
-      const oldKey = this._keyPure.concat(
-        this.separator, oldVersion.toString()
-      );
+    for (const oldVersion in this.migrations) {
+      const migrate = this.migrations[oldVersion];
+      const oldKey = this._keyPure.concat(this.separator, oldVersion);
       const oldValue = await this.backend.get(oldKey);
       if (oldValue === undefined) continue;
       const newValue = migrate(oldValue);

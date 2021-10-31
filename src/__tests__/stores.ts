@@ -66,8 +66,9 @@ describe('SyncStore', () => {
       } catch (e) {
         er = e;
       } finally {
-        if (unSub !== null) unSub();
-        done(er);
+        if (unSub !== null && typeof unSub === 'function') unSub();
+        if (er != null) done(er);
+        else done();
       }
     }
     const store = SyncStore(key, value1);
@@ -98,10 +99,9 @@ describe('VersionedSyncStore', () => {
     const store1 = VSS(key, value1, true, 0, '$$');
     await store1.set(value2);
     const strat: MigrationStrategy<string> = {
-      oldVersion: 0,
-      migrate: (v: number) => `x${v.toString()}`
+      0: (v: number) => `x${v.toString()}`
     };
-    const store2 = VSS(key, value3, true, 1, '$$', [strat]);
+    const store2 = VSS(key, value3, true, 1, '$$', strat);
     expect(await store2.get()).toBe(value4);
     expect(await backend.get(store2.key)).toBe(value4);
     expect(await backend.get(store1.key)).toBeUndefined();
