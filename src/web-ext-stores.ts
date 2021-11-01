@@ -1,6 +1,7 @@
 import { IStorageBackend, StorageMV2 } from './storage-backend';
 import { ISyncStore, SyncStore } from './sync-store';
 import { VersionedSyncStore, MigrationStrategy } from './ver-sync-store';
+import { LookupStore } from './lookup-store';
 
 /**
  * Handler for registering stores that are synced to storage.
@@ -74,6 +75,22 @@ export class WebExtStores {
       migrations
     );
     this._stores.set(store.key, store);
+    return store;
+  }
+
+  /**
+   * Registers and returns a new LookupStore.
+   * @param key Storage key.
+   * @param defaultValue Store's default value.
+   * @param syncFromExternal Whether store should be updated when storage
+   * value is updated externally. Default: `true`.
+   */
+  newLookupStore<T>(
+    key: string, defaultValue: T, syncFromExternal = true
+  ): LookupStore<T> {
+    const store =
+      new LookupStore(key, defaultValue, this._backend, syncFromExternal);
+    this._stores.set(key, store);
     return store;
   }
 

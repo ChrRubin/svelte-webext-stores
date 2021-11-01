@@ -9,3 +9,4 @@ export {
 export { ISyncStore, SyncStore } from './sync-store';
 export { WebExtStores } from './web-ext-stores';
 export { VersionedSyncStore, MigrationStrategy } from './ver-sync-store';
+export { LookupStore, VersionedLookupStore } from './lookup-store';

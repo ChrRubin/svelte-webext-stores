@@ -107,3 +107,20 @@ describe('VersionedSyncStore', () => {
     expect(await backend.get(store1.key)).toBeUndefined();
   });
 });
+
+describe.only('LookupStore', () => {
+  const LS = stores.newLookupStore.bind(stores);
+
+  const key = 'score';
+  const value1 = { a: 1, b: 2, c: 3 };
+  const value2 = { a: 3, b: 4, c: 5 };
+
+  test('Normal SyncStore functionality', async () => {
+    const store = LS(key, value1);
+    expect(await store.get()).toStrictEqual(value1);
+    expect(await backend.get(store.key)).toStrictEqual(value1);
+    await store.set(value2);
+    expect(await store.get()).toStrictEqual(value2);
+    expect(await backend.get(store.key)).toStrictEqual(value2);
+  });
+});

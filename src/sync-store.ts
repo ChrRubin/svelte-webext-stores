@@ -4,7 +4,7 @@ import { writable, Readable, Subscriber, Unsubscriber } from 'svelte/store';
 /** Interface contract for stores that is synchronized to storage. */
 export interface ISyncStore<T> extends Readable<T> {
   /** Get current value after updating from backend. */
-  get?: () => Promise<T>;
+  get: () => Promise<T>;
   /**
    * Set value, inform subscribers, and push to storage.
    * @param value to set
