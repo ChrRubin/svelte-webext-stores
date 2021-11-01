@@ -108,7 +108,7 @@ describe('VersionedSyncStore', () => {
   });
 });
 
-describe.only('LookupStore', () => {
+describe('LookupStore', () => {
   const LS = stores.newLookupStore.bind(stores);
 
   const key = 'score';
@@ -122,5 +122,19 @@ describe.only('LookupStore', () => {
     await store.set(value2);
     expect(await store.get()).toStrictEqual(value2);
     expect(await backend.get(store.key)).toStrictEqual(value2);
+  });
+
+  test('getItem()', async () => {
+    const store = LS(key, value1);
+    expect(await store.getItem('a')).toBe(1);
+    expect(await store.getItem('b')).toBe(2);
+    expect(await store.getItem('c')).toBe(3);
+  });
+
+  test('setItem()', async () => {
+    const store = LS(key, value1);
+    await store.setItem('b', 10);
+    expect(await store.getItem('b')).toBe(10);
+    expect(await backend.get(store.key)).toStrictEqual({ a: 1, b: 10, c: 3 });
   });
 });
