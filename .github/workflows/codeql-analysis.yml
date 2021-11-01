@@ -13,11 +13,9 @@ name: "CodeQL"
 
 on:
   push:
-    paths:
-      - 'src/**'
+    branches: [ master ]
   pull_request:
-    paths:
-      - 'src/**'
+    branches: [ master ]
 
 jobs:
   analyze:
