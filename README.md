@@ -80,7 +80,7 @@ This package supports and exports the following storage options out of the box:
 
 If you would like to use a custom storage backend, you must implement the `IStorageBackend` interface contract as follows:
 
-#### get
+#### `get`
 
 ``` ts
 get<T>(key: string): Promise<T | undefined>
@@ -88,7 +88,7 @@ get<T>(key: string): Promise<T | undefined>
 
 Get value from storage backend.
 
-#### set
+#### `set`
 
 ```ts
 set<T>(key: string, value: T): Promise<void>
@@ -96,7 +96,7 @@ set<T>(key: string, value: T): Promise<void>
 
 Set value in storage backend.
 
-#### addOnChangedListener
+#### `addOnChangedListener`
 
 ```ts
 addOnChangedListener(callback: OnChangedCallback): void
@@ -104,7 +104,7 @@ addOnChangedListener(callback: OnChangedCallback): void
 
 Add listener for storage change events.
 
-#### cleanUp
+#### `cleanUp`
 
 ```ts
 cleanUp(): void
@@ -112,18 +112,18 @@ cleanUp(): void
 
 Perform clean up operations.
 
-#### remove
+#### `remove`
 
 ```ts
-async remove(key: string): Promise<void>
+remove(key: string): Promise<void>
 ```
 
 Remove item with given key from storage.
 
-#### clear
+#### `clear`
 
 ```ts
-async clear(): Promise<void>
+clear(): Promise<void>
 ```
 
 Clears all stored values from storage backend.
