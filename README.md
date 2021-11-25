@@ -48,4 +48,83 @@ export const count = stores.newSyncStore('count', 1);
 <button on:click={addCount}>Count: {$count}</button>
 ```
 
-More documentation coming soon.
+## API Documentation
+
+The following API documentation is a WIP.
+
+### `WebExtStores`
+
+```ts
+new WebExtStores(backend: IStorageBackend = new StorageMV2()): WebExtStores
+```
+
+Handler for registering stores that are synced to storage. This handler will listen to storage changes and automatically update registered stores if needed.
+
+`WebExtStores` provides the following functions to register synchronized stores. Please refer to their respective class documentation for more info.
+
+| Store | Function |
+| --- | --- |
+| SyncStore | `newSyncStore<T>(key: string, defaultValue: T, syncFromExternal = true): SyncStore<T>` |
+| ISyncStore | `addCustomStore(getStore: (backend: IStorageBackend) => ISyncStore<any>): void` |
+
+### Storage Backends
+
+This package supports and exports the following storage options out of the box:
+
+| Storage Backend | Description |
+| --- | --- |
+| `StorageMV2` | Chrome Manifest Version 2 (callback API). |
+| `StorageMV3` | Chrome Manifest Version 3 (Promise API). |
+| `StorageWebExt` | Mozilla WebExtension (browser API), including [webextension-polyfill](https://github.com/mozilla/webextension-polyfill). |
+| `StorageLegacy` | Legacy/non-extension storage (`localStorage` or `sessionStorage`). |
+
+If you would like to use a custom storage backend, you must implement the `IStorageBackend` interface contract as follows:
+
+#### get
+
+``` ts
+get<T>(key: string): Promise<T | undefined>
+```
+
+Get value from storage backend.
+
+#### set
+
+```ts
+set<T>(key: string, value: T): Promise<void>
+```
+
+Set value in storage backend.
+
+#### addOnChangedListener
+
+```ts
+addOnChangedListener(callback: OnChangedCallback): void
+```
+
+Add listener for storage change events.
+
+#### cleanUp
+
+```ts
+cleanUp(): void
+```
+
+Perform clean up operations.
+
+#### remove
+
+```ts
+async remove(key: string): Promise<void>
+```
+
+Remove item with given key from storage.
+
+#### clear
+
+```ts
+async clear(): Promise<void>
+```
+
+Clears all stored values from storage backend.
+
