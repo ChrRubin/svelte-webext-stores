@@ -1,11 +1,11 @@
 import { storageLegacy } from '../storage';
 import { webExtStores } from '../web-ext-stores';
 import { Unsubscriber } from 'svelte/store';
-import { addLookupMixin } from '../stores';
 
 const backend = storageLegacy('session');
 const stores = webExtStores(backend);
 const SyncStore = stores.addSyncStore;
+const LookupStore = stores.addLookupStore;
 
 afterEach(async () => await stores._clear());
 
@@ -123,14 +123,13 @@ describe('SyncStore versioned', () => {
   });
 });
 
-describe('SyncStore with LookupMixin', () => {
+describe('LookupStore', () => {
   const key = 'score';
-  const value1: Record<string, number> = { a: 1, b: 2, c: 3 };
-  const value2: Record<string, number> = { a: 3, b: 4, c: 5 };
+  const value1 = { a: 1, b: 2, c: 3 };
+  const value2 = { a: 3, b: 4, c: 5 };
 
   test('Normal SyncStore functionality', async () => {
-    const store = SyncStore(key, value1);
-    const LS = addLookupMixin<number, typeof store>(store);
+    const LS = LookupStore(key, value1);
     expect(await LS.get()).toStrictEqual(value1);
     expect(await backend.get(LS.key)).toStrictEqual(value1);
     await LS.set(value2);
@@ -139,16 +138,14 @@ describe('SyncStore with LookupMixin', () => {
   });
 
   test('getItem()', async () => {
-    const store = SyncStore(key, value1);
-    const LS = addLookupMixin<number, typeof store>(store);
+    const LS = LookupStore(key, value1);
     expect(await LS.getItem('a')).toBe(1);
     expect(await LS.getItem('b')).toBe(2);
     expect(await LS.getItem('c')).toBe(3);
   });
 
   test('setItem()', async () => {
-    const store = SyncStore(key, value1);
-    const LS = addLookupMixin<number, typeof store>(store);
+    const LS = LookupStore(key, value1);
     await LS.setItem('b', 10);
     expect(await LS.getItem('b')).toBe(10);
     expect(await backend.get(LS.key)).toStrictEqual({ a: 1, b: 10, c: 3 });

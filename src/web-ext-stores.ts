@@ -1,5 +1,12 @@
 import { IStorageBackend, storageMV2 } from './storage';
-import { ISyncStore, SyncStore, syncStore, VersionedOptions } from './stores';
+import {
+  ISyncStore,
+  SyncStore,
+  syncStore,
+  VersionedOptions,
+  LookupableStore,
+  addLookupMixin
+} from './stores';
 
 /**
  * Handler for registering stores that are synced to storage.
@@ -14,7 +21,7 @@ export interface WebExtStores {
    * @param syncFromExternal Whether store should be updated when storage
    * value is updated externally. Default: `true`.
    * @param versionedOptions Enables options for migrating storage values from
-   * an older version to a mewer version.
+   * an older version to a newer version.
    */
   addSyncStore: <T>(
     key: string,
@@ -22,6 +29,21 @@ export interface WebExtStores {
     syncFromExternal?: boolean,
     versionedOptions?: VersionedOptions
   ) => SyncStore<T>;
+  /**
+   * Registers and returns a new Lookupable SyncStore.
+   * @param key Storage key.
+   * @param defaultValue Store's default value.
+   * @param syncFromExternal Whether store should be updated when storage
+   * value is updated externally. Default: `true`.
+   * @param versionedOptions Enables options for migrating storage values from
+   * an older version to a newer version.
+   */
+  addLookupStore: <T>(
+    key: string,
+    defaultValue: Record<string, T>,
+    syncFromExternal?: boolean,
+    versionedOptions?: VersionedOptions
+  ) => LookupableStore<T, SyncStore<typeof defaultValue>>;
   /**
    * Registers a custom store that implements ISyncStore.
    * @param getStore Callback that provides the handler's StorageBackend and
@@ -75,6 +97,20 @@ export function webExtStores(backend: IStorageBackend = storageMV2()): WebExtSto
     return store;
   }
 
+  function addLookupStore<T>(
+    key: string,
+    defaultValue: Record<string, T>,
+    syncFromExternal = true,
+    versionedOptions?: VersionedOptions
+  ): LookupableStore<T, SyncStore<typeof defaultValue>> {
+    const store = addLookupMixin<T, SyncStore<typeof defaultValue>>(
+      addSyncStore(
+        key, defaultValue, syncFromExternal, versionedOptions
+      )
+    );
+    return store;
+  }
+
   function addCustomStore(
     getStore: (backend: IStorageBackend) => ISyncStore<any>
   ): void {
@@ -106,5 +142,12 @@ export function webExtStores(backend: IStorageBackend = storageMV2()): WebExtSto
     }
   }
 
-  return { addSyncStore, addCustomStore, _clear, exportJson, importJson };
+  return {
+    addSyncStore,
+    addLookupStore,
+    addCustomStore,
+    _clear,
+    exportJson,
+    importJson
+  };
 }

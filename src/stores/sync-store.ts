@@ -60,8 +60,6 @@ export interface SyncStore<T> extends ISyncStore<T> {
   ready: () => Promise<void>;
   /** Reset store value to default value. */
   reset: () => Promise<void>;
-  /** Update store value from storage backend. */
-  updateFromBackend: () => Promise<void>;
 }
 
 /**
@@ -72,7 +70,7 @@ export interface SyncStore<T> extends ISyncStore<T> {
  * @param syncFromExternal Whether store should be updated when storage value
  * is updated externally.
  * @param versionedOptions Enables options for migrating storage values from an
- * older version to a mewer version.
+ * older version to a newer version.
  */
 export function syncStore<T>(
   key: string,
@@ -160,7 +158,6 @@ export function syncStore<T>(
     reset,
     ready,
     syncFromExternal,
-    key,
-    updateFromBackend
+    key
   };
 }
