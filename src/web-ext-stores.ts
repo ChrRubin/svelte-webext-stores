@@ -1,4 +1,4 @@
-import { IStorageBackend, StorageMV2 } from './storage/storage-backend';
+import { IStorageBackend, storageMV2 } from './storage';
 import { ISyncStore, SyncStore } from './stores/sync-store';
 import { VersionedSyncStore, MigrationStrategy } from './stores/ver-sync-store';
 import { LookupStore } from './stores/lookup-store';
@@ -12,8 +12,8 @@ export class WebExtStores {
   private readonly _backend;
   private readonly _stores: Map<string, ISyncStore<any>>;
 
-  /** @param backend Storage backend to use. Default: `new StorageMV2()`. */
-  constructor(backend: IStorageBackend = new StorageMV2()) {
+  /** @param backend Storage backend to use. Default: `StorageMV2()`. */
+  constructor(backend: IStorageBackend = storageMV2()) {
     this._backend = backend;
     this._stores = new Map();
 
