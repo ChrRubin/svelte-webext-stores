@@ -1,9 +1,11 @@
 export {
-  IStorageBackend, StorageMV2, StorageMV3, StorageWebExt, StorageLegacy,
+  IStorageBackend, StorageChange, StorageChanges, OnChangedCallback,
+  StorageMV2, StorageMV3, StorageWebExt, StorageLegacy,
   storageMV2, storageMV3, storageWebExt, storageLegacy
 } from './storage';
 
-export { ISyncStore, SyncStore } from './stores/sync-store';
+export {
+  ISyncStore, SyncStore, VersionMigrationStrategy, syncStore, addLookupMixin
+} from './stores';
+
 export { WebExtStores } from './web-ext-stores';
-export { VersionedSyncStore, MigrationStrategy } from './stores/ver-sync-store';
-export { LookupStore, VersionedLookupStore } from './stores/lookup-store';

@@ -1,8 +1,4 @@
-interface StorageChange {
-  newValue?: any;
-  oldValue?: any;
-}
-
+export interface StorageChange { newValue?: any, oldValue?: any }
 export type StorageChanges = Record<string, StorageChange>;
 export type OnChangedCallback = (changes: StorageChanges) => void;
 
