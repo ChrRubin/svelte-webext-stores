@@ -54,7 +54,7 @@ Note: *The following documentation is a WIP.*
 
 ### Storage Backends
 
-This package supports and exports the following storage options out of the box.
+This package supports and exports the following storage options out of the box. To use a provided storage options, simply import it and pass it into `webExtStores`.
 
 | Storage | Description |
 | --- | --- |
@@ -63,14 +63,14 @@ This package supports and exports the following storage options out of the box.
 | `storageWebExt` | Mozilla WebExtension (browser API), including [webextension-polyfill](https://github.com/mozilla/webextension-polyfill). |
 | `storageLegacy` | Legacy/non-extension storage (`localStorage` or `sessionStorage`). |
 
-To set the storage area/type, pass the corresponding string as the function parameter.
+To set the storage area/type, pass the corresponding string parameter.
 
 | Storage | Allowed parameter | Default
 | --- | --- | --- |
 | `storageMV2`, `storageMV3`, `storageWebExt` | `'local'` \| `'sync'` \| `'managed'` | `'local'` |
 | `storageLegacy` | `'session'` \| `'local'` | `'session'`
 
-To use a provided storage options, simply import it and pass it into `webExtStores`.
+Example:
 
 ```js
 import { webExtStores, storageWebExt } from 'svelte-webext-stores';
@@ -79,9 +79,11 @@ import { webExtStores, storageWebExt } from 'svelte-webext-stores';
 const stores = webExtStores(storageWebExt('sync'));
 ```
 
-To use a custom storage backend, implement the `IStorageBackend` interface contract as follows:
+#### `IStorageBackend`
 
-| Function | Signature | Description |
+All of the above storage backends implements the `IStorageBackend` interface contract. To use a custom storage backend, implement the same contract as follows and pass it into `webExtStores`:
+
+| Method | Signature | Description |
 | --- | --- | --- |
 | get | `get<T>(key: string): Promise<T \| undefined>` | Get value from storage backend. |
 | set | `set<T>(key: string, value: T): Promise<void>` | Set value in storage backend. |
@@ -90,6 +92,58 @@ To use a custom storage backend, implement the `IStorageBackend` interface contr
 | remove | `remove(key: string): Promise<void>` | Remove item from storage. |
 | clear | `clear(): Promise<void>` | Clears all stored values from storage backend. |
 
-The callback functions added by `addOnChangedListener` must be called whenever any value changes in the storage. The callback function signature is as follows:
+The callbacks added by `addOnChangedListener` must be called whenever any value changes in the storage. The callback signature is as follows:
 
 `(changes: {[key: string]: { newValue?: any, oldValue?: any }}) => void`
+
+### Synchronized Stores
+
+All provided synchronized stores implements the `ISyncStore` interface contract. To use a custom synchronized store, implement the same contract as follows. Note that `ISyncStore` also extends Svelte's `Readable`, so you also have to implement its `subscribe` method.
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| get | `get: () => Promise<T>` | Get current value after updating from backend. |
+| set | `set: (value: T) => Promise<void>` | Set value, inform subscribers, and push to storage. |
+| getCurrent | `getCurrent: () => T` | Get current value without updating from backend. Used for comparing storage changes when syncing from storage. |
+
+| Property | Type | Description |
+| --- | --- | --- |
+| syncFromExternal | boolean | Whether store should be updated when storage value is updated externally, e.g. storage value is changed by another page. |
+| key | string | Storage key. |
+
+All synchronized stores has to be registered to a `WebExtStores` instance for their values to update whenever the storage is updated. `WebExtStores` contains the following methods to register synchronized stores.
+
+#### `addSyncStore`
+
+Standard store that synchronizes to the storage backend. Uses Svelte `writable` to implement the Svelte store contract.
+
+```ts
+WebExtStores.addSyncStore<T>(
+  key: string,
+  defaultValue: T,
+  syncFromExternal = true,
+  versionedOptions?: VersionedOptions
+): SyncStore<T>
+```
+
+##### Parameters
+
+| Parameter | Description |
+| --- | --- |
+| key | Storage key |
+| defaultValue | Store's default value |
+| syncFromExternal | Whether store should be updated when storage value is updated externally |
+| versionedOptions | Enables options for migrating storage values from an older version to a newer version |
+
+##### Methods
+
+All of `ISyncStore` and:
+
+| Methods | Signature | Description |
+| --- | --- | --- |
+| ready | `() => Promise<void>` | Ensure that any async initialization process (such as initial update from backend) has been completed. You typically don't need to manually call this unless you wish to sync the store to the storage backend before any of `get()`, `set()` or `subscribe()` is called. |
+| reset | `() => Promise<void>` | Reset store value to default value. |
+
+#### Versioned Store Values and Migration
+
+`SyncStore` and its derivatives has the optional parameter `versionedOptions`, which, when provided, keeps track of the current store's version to enable ease of migrating values from an older store version to the current version.
