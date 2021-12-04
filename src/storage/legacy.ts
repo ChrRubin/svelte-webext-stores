@@ -10,9 +10,9 @@ export interface StorageLegacy extends IStorageBackend { }
 
 /**
  * Create storage backend for legacy/non-WebExtension applications.
- * @param area `'local'` | `'session'`
+ * @param area `'session'` | `'local'`. Default: `'session'`.
  */
-export function storageLegacy(area: WebStorageType): StorageLegacy {
+export function storageLegacy(area: WebStorageType = 'session'): StorageLegacy {
   const storage = area === 'session' ? window.sessionStorage : window.localStorage;
   let callbacks: OnChangedCallback[] = [];
   const listeners: Array<(event: StorageEvent) => void> = [];

@@ -15,23 +15,23 @@ Note: *This library is currently in alpha development, and is subject to breakin
 
 ### Installation
 
-`npm install --save-dev svelte-webext-stores`
+`npm install -D svelte-webext-stores`
 
 or
 
-`yarn add --save-dev svelte-webext-stores`
+`yarn add -D svelte-webext-stores`
 
-### Usage
+### Quick Usage
 
 `storage.js`
 
 ```javascript
-import { WebExtStores } from 'svelte-webext-stores';
+import { webExtStores } from 'svelte-webext-stores';
 
 // Instantiate default store handler, which is backed by MV2 chrome.storage.local
-const stores = new WebExtStores();
-// Register and export new synchronized store with storage key 'count' and default value of 1
-export const count = stores.newSyncStore('count', 1);
+const stores = webExtStores();
+// Register a new synchronized store with storage key 'count' and default value of 1
+export const count = stores.addSyncStore('count', 1);
 ```
 
 `App.svelte`
@@ -48,83 +48,48 @@ export const count = stores.newSyncStore('count', 1);
 <button on:click={addCount}>Count: {$count}</button>
 ```
 
-## API Documentation
+## Advanced Usage
 
-The following API documentation is a WIP.
-
-### `WebExtStores`
-
-```ts
-new WebExtStores(backend: IStorageBackend = new StorageMV2()): WebExtStores
-```
-
-Handler for registering stores that are synced to storage. This handler will listen to storage changes and automatically update registered stores if needed.
-
-`WebExtStores` provides the following functions to register synchronized stores. Please refer to their respective class documentation for more info.
-
-| Store | Function |
-| --- | --- |
-| SyncStore | `newSyncStore<T>(key: string, defaultValue: T, syncFromExternal = true): SyncStore<T>` |
-| ISyncStore | `addCustomStore(getStore: (backend: IStorageBackend) => ISyncStore<any>): void` |
+Note: *The following documentation is a WIP.*
 
 ### Storage Backends
 
-This package supports and exports the following storage options out of the box:
+This package supports and exports the following storage options out of the box.
 
-| Storage Backend | Description |
+| Storage | Description |
 | --- | --- |
-| `StorageMV2` | Chrome Manifest Version 2 (callback API). |
-| `StorageMV3` | Chrome Manifest Version 3 (Promise API). |
-| `StorageWebExt` | Mozilla WebExtension (browser API), including [webextension-polyfill](https://github.com/mozilla/webextension-polyfill). |
-| `StorageLegacy` | Legacy/non-extension storage (`localStorage` or `sessionStorage`). |
+| `storageMV2` | Chrome Manifest Version 2 (callback API). |
+| `storageMV3` | Chrome Manifest Version 3 (Promise API). |
+| `storageWebExt` | Mozilla WebExtension (browser API), including [webextension-polyfill](https://github.com/mozilla/webextension-polyfill). |
+| `storageLegacy` | Legacy/non-extension storage (`localStorage` or `sessionStorage`). |
 
-If you would like to use a custom storage backend, you must implement the `IStorageBackend` interface contract as follows:
+To set the storage area/type, pass the corresponding string as the function parameter.
 
-#### `get`
+| Storage | Allowed parameter | Default
+| --- | --- | --- |
+| `storageMV2`, `storageMV3`, `storageWebExt` | `'local'` \| `'sync'` \| `'managed'` | `'local'` |
+| `storageLegacy` | `'session'` \| `'local'` | `'session'`
 
-``` ts
-get<T>(key: string): Promise<T | undefined>
+To use a provided storage options, simply import it and pass it into `webExtStores`.
+
+```js
+import { webExtStores, storageWebExt } from 'svelte-webext-stores';
+
+// Uses the Mozilla WebExtension browser API in the 'sync' area.
+const stores = webExtStores(storageWebExt('sync'));
 ```
 
-Get value from storage backend.
+To use a custom storage backend, implement the `IStorageBackend` interface contract as follows:
 
-#### `set`
+| Function | Signature | Description |
+| --- | --- | --- |
+| get | `get<T>(key: string): Promise<T \| undefined>` | Get value from storage backend. |
+| set | `set<T>(key: string, value: T): Promise<void>` | Set value in storage backend. |
+| addOnChangedListener | `addOnChangedListener(callback: OnChangedCallback): void` | Add listener for storage change events. More info below. |
+| cleanUp | `cleanUp(): void` | Perform clean up operations. |
+| remove | `remove(key: string): Promise<void>` | Remove item from storage. |
+| clear | `clear(): Promise<void>` | Clears all stored values from storage backend. |
 
-```ts
-set<T>(key: string, value: T): Promise<void>
-```
+The callback functions added by `addOnChangedListener` must be called whenever any value changes in the storage. The callback function signature is as follows:
 
-Set value in storage backend.
-
-#### `addOnChangedListener`
-
-```ts
-addOnChangedListener(callback: OnChangedCallback): void
-```
-
-Add listener for storage change events.
-
-#### `cleanUp`
-
-```ts
-cleanUp(): void
-```
-
-Perform clean up operations.
-
-#### `remove`
-
-```ts
-remove(key: string): Promise<void>
-```
-
-Remove item with given key from storage.
-
-#### `clear`
-
-```ts
-clear(): Promise<void>
-```
-
-Clears all stored values from storage backend.
-
+`(changes: {[key: string]: { newValue?: any, oldValue?: any }}) => void`
