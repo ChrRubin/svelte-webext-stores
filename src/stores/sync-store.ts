@@ -1,4 +1,4 @@
-import type { IStorageBackend } from './storage-backend';
+import type { IStorageBackend } from '../storage/storage-backend';
 import { writable, Readable, Subscriber, Unsubscriber } from 'svelte/store';
 
 /** Interface contract for stores that is synchronized to storage. */

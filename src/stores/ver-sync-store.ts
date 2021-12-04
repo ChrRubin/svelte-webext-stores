@@ -1,4 +1,4 @@
-import type { IStorageBackend } from './storage-backend';
+import type { IStorageBackend } from '../storage/storage-backend';
 import { SyncStore } from './sync-store';
 
 /**

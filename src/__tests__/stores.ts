@@ -1,7 +1,7 @@
-import { StorageLegacy } from '../storage-backend';
+import { StorageLegacy } from '../storage/storage-backend';
 import { WebExtStores } from '../web-ext-stores';
 import { Unsubscriber } from 'svelte/store';
-import type { MigrationStrategy } from '../ver-sync-store';
+import type { MigrationStrategy } from '../stores/ver-sync-store';
 
 const backend = new StorageLegacy('session');
 const stores = new WebExtStores(backend);

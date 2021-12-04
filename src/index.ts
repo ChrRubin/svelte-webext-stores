@@ -4,9 +4,9 @@ export {
   StorageMV3,
   StorageWebExt,
   StorageLegacy
-} from './storage-backend';
+} from './storage/storage-backend';
 
-export { ISyncStore, SyncStore } from './sync-store';
+export { ISyncStore, SyncStore } from './stores/sync-store';
 export { WebExtStores } from './web-ext-stores';
-export { VersionedSyncStore, MigrationStrategy } from './ver-sync-store';
-export { LookupStore, VersionedLookupStore } from './lookup-store';
+export { VersionedSyncStore, MigrationStrategy } from './stores/ver-sync-store';
+export { LookupStore, VersionedLookupStore } from './stores/lookup-store';

@@ -1,7 +1,7 @@
-import { IStorageBackend, StorageMV2 } from './storage-backend';
-import { ISyncStore, SyncStore } from './sync-store';
-import { VersionedSyncStore, MigrationStrategy } from './ver-sync-store';
-import { LookupStore } from './lookup-store';
+import { IStorageBackend, StorageMV2 } from './storage/storage-backend';
+import { ISyncStore, SyncStore } from './stores/sync-store';
+import { VersionedSyncStore, MigrationStrategy } from './stores/ver-sync-store';
+import { LookupStore } from './stores/lookup-store';
 
 /**
  * Handler for registering stores that are synced to storage.

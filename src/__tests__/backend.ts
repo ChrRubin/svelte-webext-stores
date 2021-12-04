@@ -6,7 +6,7 @@ import {
   StorageMV3,
   StorageWebExt,
   StorageLegacy
-} from '../storage-backend';
+} from '../storage/storage-backend';
 
 const webExtAreas: WebExtStorageArea[] = ['sync', 'local', 'managed'];
 const webStorageType: WebStorageType[] = ['local', 'session'];
