@@ -6,7 +6,7 @@ type RecordStore<T> = ISyncStore<Record<string, T>>;
  * SyncStore for `Record<string, T>` objects. Provides convenience functions
  * for getting and setting property values using property keys.
  */
-type LookupableStore<T, S extends RecordStore<T>> = S & {
+export type LookupableStore<T, S extends RecordStore<T>> = S & {
   /** Get object property value. */
   getItem: (key: string) => Promise<T | undefined>;
   /** Set object property value. */

@@ -1,15 +1,15 @@
-import { StorageLegacy } from '../storage/storage-backend';
+import { storageLegacy } from '../storage';
 import { WebExtStores } from '../web-ext-stores';
 import { Unsubscriber } from 'svelte/store';
-import type { MigrationStrategy } from '../stores/ver-sync-store';
+import { addLookupMixin } from '../stores';
 
-const backend = new StorageLegacy('session');
+const backend = storageLegacy('session');
 const stores = new WebExtStores(backend);
+const SyncStore = stores.newSyncStore.bind(stores);
+
 afterEach(async () => await stores._clear());
 
 describe('SyncStore', () => {
-  const SyncStore = stores.newSyncStore.bind(stores);
-
   const key = 'hey';
   const value1 = 'listen';
   const value2 = 'watch out';
@@ -77,17 +77,16 @@ describe('SyncStore', () => {
   });
 });
 
-describe('VersionedSyncStore', () => {
-  const VSS = stores.newVersionedSyncStore.bind(stores);
-
+describe('SyncStore versioned', () => {
   const key = 'arch';
   const value1 = 64;
   const value2 = 86;
   const value3 = 'x64';
   const value4 = 'x86';
+  const migration = (v: number): string => `x${v.toString()}`;
 
   test('Normal SyncStore functionality', async () => {
-    const store = VSS(key, value1);
+    const store = SyncStore(key, value1);
     expect(await store.get()).toBe(value1);
     expect(await backend.get(store.key)).toBe(value1);
     await store.set(value2);
@@ -95,46 +94,63 @@ describe('VersionedSyncStore', () => {
     expect(await backend.get(store.key)).toBe(value2);
   });
 
-  test('Migrate', async () => {
-    const store1 = VSS(key, value1, true, 0, '$$');
+  test('Migrate to new version', async () => {
+    const store1 = SyncStore(
+      key, value1, true, { version: 0, seperator: '$$' }
+    );
     await store1.set(value2);
-    const strat: MigrationStrategy<string> = {
-      0: (v: number) => `x${v.toString()}`
-    };
-    const store2 = VSS(key, value3, true, 1, '$$', strat);
+
+    const migrations = { 0: migration };
+    const store2 = SyncStore(
+      key, value3, true, { version: 1, seperator: '$$', migrations }
+    );
+    expect(await store2.get()).toBe(value4);
+    expect(await backend.get(store2.key)).toBe(value4);
+    expect(await backend.get(store1.key)).toBeUndefined();
+  });
+
+  test('Migrate from no version', async () => {
+    const store1 = SyncStore(key, value1);
+    await store1.set(value2);
+
+    const migrations = { '-1': migration };
+    const store2 = SyncStore(
+      key, value3, true, { version: 1, seperator: '$$', migrations }
+    );
     expect(await store2.get()).toBe(value4);
     expect(await backend.get(store2.key)).toBe(value4);
     expect(await backend.get(store1.key)).toBeUndefined();
   });
 });
 
-describe('LookupStore', () => {
-  const LS = stores.newLookupStore.bind(stores);
-
+describe('SyncStore with LookupMixin', () => {
   const key = 'score';
-  const value1 = { a: 1, b: 2, c: 3 };
-  const value2 = { a: 3, b: 4, c: 5 };
+  const value1: Record<string, number> = { a: 1, b: 2, c: 3 };
+  const value2: Record<string, number> = { a: 3, b: 4, c: 5 };
 
   test('Normal SyncStore functionality', async () => {
-    const store = LS(key, value1);
-    expect(await store.get()).toStrictEqual(value1);
-    expect(await backend.get(store.key)).toStrictEqual(value1);
-    await store.set(value2);
-    expect(await store.get()).toStrictEqual(value2);
-    expect(await backend.get(store.key)).toStrictEqual(value2);
+    const store = SyncStore(key, value1);
+    const LS = addLookupMixin<number, typeof store>(store);
+    expect(await LS.get()).toStrictEqual(value1);
+    expect(await backend.get(LS.key)).toStrictEqual(value1);
+    await LS.set(value2);
+    expect(await LS.get()).toStrictEqual(value2);
+    expect(await backend.get(LS.key)).toStrictEqual(value2);
   });
 
   test('getItem()', async () => {
-    const store = LS(key, value1);
-    expect(await store.getItem('a')).toBe(1);
-    expect(await store.getItem('b')).toBe(2);
-    expect(await store.getItem('c')).toBe(3);
+    const store = SyncStore(key, value1);
+    const LS = addLookupMixin<number, typeof store>(store);
+    expect(await LS.getItem('a')).toBe(1);
+    expect(await LS.getItem('b')).toBe(2);
+    expect(await LS.getItem('c')).toBe(3);
   });
 
   test('setItem()', async () => {
-    const store = LS(key, value1);
-    await store.setItem('b', 10);
-    expect(await store.getItem('b')).toBe(10);
-    expect(await backend.get(store.key)).toStrictEqual({ a: 1, b: 10, c: 3 });
+    const store = SyncStore(key, value1);
+    const LS = addLookupMixin<number, typeof store>(store);
+    await LS.setItem('b', 10);
+    expect(await LS.getItem('b')).toBe(10);
+    expect(await backend.get(LS.key)).toStrictEqual({ a: 1, b: 10, c: 3 });
   });
 });

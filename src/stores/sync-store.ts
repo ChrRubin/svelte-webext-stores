@@ -44,7 +44,7 @@ export interface VersionedOptions {
   /** Separator between key and version. */
   seperator: string;
   /** Key-item pair for migrating values. */
-  migrations: VersionMigrationStrategy;
+  migrations?: VersionMigrationStrategy;
 }
 
 /** Store that is synchronized to the storage backend. */
@@ -93,7 +93,7 @@ export function syncStore<T>(
   async function ready(): Promise<void> {
     if (isReady) return;
     await updateFromBackend();
-    if (versionedOptions != null) {
+    if (versionedOptions?.migrations != null) {
       for (const oldVersion in versionedOptions.migrations) {
         const migrate = versionedOptions.migrations[oldVersion];
         const oldKey = oldVersion === '-1'
