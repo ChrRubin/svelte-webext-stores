@@ -8,4 +8,4 @@ export {
   ISyncStore, SyncStore, VersionMigrationStrategy, syncStore, addLookupMixin
 } from './stores';
 
-export { WebExtStores } from './web-ext-stores';
+export { WebExtStores, webExtStores } from './web-ext-stores';

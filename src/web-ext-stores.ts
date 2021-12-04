@@ -6,29 +6,7 @@ import { ISyncStore, SyncStore, syncStore, VersionedOptions } from './stores';
  * This handler will listen to storage changes and automatically update
  * registered stores if needed.
  */
-export class WebExtStores {
-  private readonly _backend;
-  private readonly _stores: Map<string, ISyncStore<any>>;
-
-  /** @param backend Storage backend to use. Default: `StorageMV2()`. */
-  constructor(backend: IStorageBackend = storageMV2()) {
-    this._backend = backend;
-    this._stores = new Map();
-
-    backend.addOnChangedListener((changes) => {
-      Object.keys(changes).forEach((key) => {
-        const change = changes[key];
-        const result = this._stores.get(key);
-        if (
-          result == null ||
-          !result.syncFromExternal ||
-          change.oldValue !== result.getCurrent()
-        ) return;
-        result.set(change.newValue).catch((e) => console.error(e));
-      });
-    });
-  }
-
+export interface WebExtStores {
   /**
    * Registers and returns a new SyncStore.
    * @param key Storage key.
@@ -38,7 +16,48 @@ export class WebExtStores {
    * @param versionedOptions Enables options for migrating storage values from
    * an older version to a mewer version.
    */
-  newSyncStore<T>(
+  addSyncStore: <T>(
+    key: string,
+    defaultValue: T,
+    syncFromExternal?: boolean,
+    versionedOptions?: VersionedOptions
+  ) => SyncStore<T>;
+  /**
+   * Registers a custom store that implements ISyncStore.
+   * @param getStore Callback that provides the handler's StorageBackend and
+   * expects an ISyncStore implementation.
+   */
+  addCustomStore: (
+    getStore: (backend: IStorageBackend) => ISyncStore<any>
+  ) => void;
+  /**
+   * Removes and unregisters all registered stores from backend storage.
+   * For tests purposes only.
+   */
+  _clear: () => Promise<void>;
+}
+
+/**
+ * Create handler for registering stores that are synced to storage.
+ * @param backend Storage backend.
+ */
+export function webExtStores(backend: IStorageBackend = storageMV2()): WebExtStores {
+  const stores: Map<string, ISyncStore<any>> = new Map();
+
+  backend.addOnChangedListener((changes) => {
+    Object.keys(changes).forEach((key) => {
+      const change = changes[key];
+      const result = stores.get(key);
+      if (
+        result == null ||
+        !result.syncFromExternal ||
+        change.oldValue !== result.getCurrent()
+      ) return;
+      result.set(change.newValue).catch((e) => console.error(e));
+    });
+  });
+
+  function addSyncStore<T>(
     key: string,
     defaultValue: T,
     syncFromExternal = true,
@@ -46,32 +65,25 @@ export class WebExtStores {
   ): SyncStore<T> {
     const store =
       syncStore(
-        key, defaultValue, this._backend, syncFromExternal, versionedOptions
+        key, defaultValue, backend, syncFromExternal, versionedOptions
       );
-    this._stores.set(key, store);
+    stores.set(key, store);
     return store;
   }
 
-  /**
-   * Registers a custom store that implements ISyncStore.
-   * @param getStore Callback that provides the handler's StorageBackend and
-   * expects an ISyncStore implementation.
-   */
-  addCustomStore(
+  function addCustomStore(
     getStore: (backend: IStorageBackend) => ISyncStore<any>
   ): void {
-    const store = getStore(this._backend);
-    this._stores.set(store.key, store);
+    const store = getStore(backend);
+    stores.set(store.key, store);
   }
 
-  /**
-   * Removes and unregisters all registered stores from backend storage.
-   * For tests purposes only.
-   */
-  async _clear(): Promise<void> {
-    for (const key of this._stores.keys()) {
-      await this._backend.remove(key);
+  async function _clear(): Promise<void> {
+    for (const key of stores.keys()) {
+      await backend.remove(key);
     }
-    this._stores.clear();
+    stores.clear();
   }
+
+  return { addSyncStore, addCustomStore, _clear };
 }

@@ -1,11 +1,11 @@
 import { storageLegacy } from '../storage';
-import { WebExtStores } from '../web-ext-stores';
+import { webExtStores } from '../web-ext-stores';
 import { Unsubscriber } from 'svelte/store';
 import { addLookupMixin } from '../stores';
 
 const backend = storageLegacy('session');
-const stores = new WebExtStores(backend);
-const SyncStore = stores.newSyncStore.bind(stores);
+const stores = webExtStores(backend);
+const SyncStore = stores.addSyncStore;
 
 afterEach(async () => await stores._clear());
 
