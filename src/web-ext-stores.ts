@@ -35,6 +35,10 @@ export interface WebExtStores {
    * For tests purposes only.
    */
   _clear: () => Promise<void>;
+  /** Export all registered stores as JSON string. */
+  exportJson: () => Promise<string>;
+  /** Import store values from JSON string. */
+  importJson: (json: string) => Promise<void>;
 }
 
 /**
@@ -85,5 +89,22 @@ export function webExtStores(backend: IStorageBackend = storageMV2()): WebExtSto
     stores.clear();
   }
 
-  return { addSyncStore, addCustomStore, _clear };
+  async function exportJson(): Promise<string> {
+    const result: Record<string, unknown> = {};
+    for (const [key, store] of stores) {
+      result[key] = await store.get();
+    }
+    return JSON.stringify(result);
+  }
+
+  async function importJson(json: string): Promise<void> {
+    const data: Record<string, unknown> = JSON.parse(json);
+    for (const [key, value] of Object.entries(data)) {
+      const store = stores.get(key);
+      if (store == null) continue;
+      await store.set(value);
+    }
+  }
+
+  return { addSyncStore, addCustomStore, _clear, exportJson, importJson };
 }
