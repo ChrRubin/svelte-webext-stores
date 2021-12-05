@@ -98,6 +98,8 @@ The callbacks added by `addOnChangedListener` must be called whenever any value 
 
 ### Synchronized Stores
 
+#### `ISyncStore`
+
 All provided synchronized stores implements the `ISyncStore` interface contract. To use a custom synchronized store, implement the same contract as follows. Note that `ISyncStore` also extends Svelte's `Readable`, so you also have to implement its `subscribe` method.
 
 | Method | Signature | Description |
@@ -111,9 +113,7 @@ All provided synchronized stores implements the `ISyncStore` interface contract.
 | syncFromExternal | boolean | Whether store should be updated when storage value is updated externally, e.g. storage value is changed by another page. |
 | key | string | Storage key. |
 
-All synchronized stores has to be registered to a `WebExtStores` instance for their values to update whenever the storage is updated. `WebExtStores` contains the following methods to register synchronized stores.
-
-#### `addSyncStore`
+#### `SyncStore`
 
 Standard store that synchronizes to the storage backend. Uses Svelte `writable` to implement the Svelte store contract.
 
@@ -146,4 +146,43 @@ All of `ISyncStore` and:
 
 #### Versioned Store Values and Migration
 
-`SyncStore` and its derivatives has the optional parameter `versionedOptions`, which, when provided, keeps track of the current store's version to enable ease of migrating values from an older store version to the current version.
+`SyncStore` and its derivatives has the optional parameter `versionedOptions`. When the parameter is provided, it keeps track of the current store's version to enable ease of migrating values from an older store version to the current version. This can be useful to migrate breaking changes on the stored data without reseting its value to default.
+
+`VersionedOptions` properties are as follows:
+
+| Property | Type | Descrption |
+| --- | --- | --- |
+| version | number | Current version number. Do not use `-1`. |
+| seperator | string | Separator between key and version. |
+| migrations | `Map<number, (oldValue: any) => T>` | Map for migrating values. Keys are the old version to match against, and values are callbacks that accepts the value found from the given old version and returns the corresponding value for the current version. Use the key `-1` to migrate from a versionless store. |
+
+SyncStores that are provided with the `versionedOptions` parameter are stored as `${key}${seperator}${version}` internally. When an older version that matches any of the keys in the Map is found, its value is passed to the callback, the migrated value is stored and the old version is removed.
+
+```js
+// Initial store
+export const size = stores.addSyncStore('size', 500);
+
+// Example usage in svelte
+window.resizeTo($size, $size);
+```
+
+```js
+// To migrate to a new value, replace the old declaration
+const sizeMigrations = new Map();
+sizeMigrations.set(-1, (oldValue) => `${oldValue}x${oldValue * 2}`);
+
+export const size = stores.addSyncStore(
+  'size',
+  '500x1000',
+  true,
+  {
+    version: 1,
+    seperator: '$',
+    migrations: sizeMigrations
+  }
+);
+
+// Example usage in svelte
+const [width, height] = $size.split('x');
+window.resizeTo(width, height);
+```
