@@ -1,4 +1,4 @@
 export {
-  ISyncStore, SyncStore, VersionMigrationStrategy, VersionedOptions, syncStore
+  ISyncStore, SyncStore, VersionedOptions, syncStore
 } from './sync-store';
 export { LookupableStore, addLookupMixin } from './lookup-store';

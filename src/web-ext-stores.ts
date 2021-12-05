@@ -27,7 +27,7 @@ export interface WebExtStores {
     key: string,
     defaultValue: T,
     syncFromExternal?: boolean,
-    versionedOptions?: VersionedOptions
+    versionedOptions?: VersionedOptions<T>
   ) => SyncStore<T>;
   /**
    * Registers and returns a new Lookupable SyncStore.
@@ -42,7 +42,7 @@ export interface WebExtStores {
     key: string,
     defaultValue: Record<string, T>,
     syncFromExternal?: boolean,
-    versionedOptions?: VersionedOptions
+    versionedOptions?: VersionedOptions<Record<string, T>>
   ) => LookupableStore<T, SyncStore<typeof defaultValue>>;
   /**
    * Registers a custom store that implements ISyncStore.
@@ -87,7 +87,7 @@ export function webExtStores(backend: IStorageBackend = storageMV2()): WebExtSto
     key: string,
     defaultValue: T,
     syncFromExternal = true,
-    versionedOptions?: VersionedOptions
+    versionedOptions?: VersionedOptions<T>
   ): SyncStore<T> {
     const store =
       syncStore(
@@ -101,7 +101,7 @@ export function webExtStores(backend: IStorageBackend = storageMV2()): WebExtSto
     key: string,
     defaultValue: Record<string, T>,
     syncFromExternal = true,
-    versionedOptions?: VersionedOptions
+    versionedOptions?: VersionedOptions<Record<string, T>>
   ): LookupableStore<T, SyncStore<typeof defaultValue>> {
     const store = addLookupMixin<T, SyncStore<typeof defaultValue>>(
       addSyncStore(

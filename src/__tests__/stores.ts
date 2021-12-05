@@ -100,7 +100,7 @@ describe('SyncStore versioned', () => {
     );
     await store1.set(value2);
 
-    const migrations = { 0: migration };
+    const migrations = (new Map()).set(0, migration);
     const store2 = SyncStore(
       key, value3, true, { version: 1, seperator: '$$', migrations }
     );
@@ -113,7 +113,7 @@ describe('SyncStore versioned', () => {
     const store1 = SyncStore(key, value1);
     await store1.set(value2);
 
-    const migrations = { '-1': migration };
+    const migrations = (new Map()).set(-1, migration);
     const store2 = SyncStore(
       key, value3, true, { version: 1, seperator: '$$', migrations }
     );

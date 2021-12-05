@@ -25,26 +25,21 @@ export interface ISyncStore<T> extends Readable<T> {
   readonly key: string;
 }
 
-/**
- * Key-item pair for migrating VersionedSyncStore values.
- *
- * Each property must have a version number as the key, and the value a
- * callback function that accepts the value found from the given version and
- * returns the corresponding value for the current version.
- *
- * Use the number `-1` to migrate from a versionless store.
- */
-export interface VersionMigrationStrategy {
-  [oldVersion: number]: (oldValue: any) => any;
-}
-
-export interface VersionedOptions {
-  /** Current version number. */
+export interface VersionedOptions<T> {
+  /** Current version number. Do not use `-1`. */
   version: number;
   /** Separator between key and version. */
   seperator: string;
-  /** Key-item pair for migrating values. */
-  migrations?: VersionMigrationStrategy;
+  /**
+   * Map for migrating values.
+   *
+   * Keys are the old version to match against, and values are callbacks that
+   * accepts the value found from the given old version and returns the
+   * corresponding value for the current version.
+   *
+   * Use the key `-1` to migrate from a versionless store.
+   */
+  migrations?: Map<number, (oldValue: any) => T>;
 }
 
 /** Store that is synchronized to the storage backend. */
@@ -77,7 +72,7 @@ export function syncStore<T>(
   defaultValue: T,
   backend: IStorageBackend,
   syncFromExternal: boolean,
-  versionedOptions?: VersionedOptions
+  versionedOptions?: VersionedOptions<T>
 ): SyncStore<T> {
   let currentValue: T = defaultValue;
   let isReady = false;
@@ -92,9 +87,8 @@ export function syncStore<T>(
     if (isReady) return;
     await updateFromBackend();
     if (versionedOptions?.migrations != null) {
-      for (const oldVersion in versionedOptions.migrations) {
-        const migrate = versionedOptions.migrations[oldVersion];
-        const oldKey = oldVersion === '-1'
+      for (const [oldVersion, migrate] of versionedOptions.migrations.entries()) {
+        const oldKey = oldVersion === -1
           ? keyPure
           : `${keyPure}${versionedOptions.seperator}${oldVersion}`;
         const oldValue = await backend.get(oldKey);
