@@ -52,7 +52,7 @@ export const count = stores.addSyncStore('count', 1);
 
 Note: *The following documentation is a WIP.*
 
-### Storage Backends
+## Storage Backends
 
 This package supports and exports the following storage options out of the box. To use a provided storage options, simply import it and pass it into `webExtStores`.
 
@@ -79,41 +79,13 @@ import { webExtStores, storageWebExt } from 'svelte-webext-stores';
 const stores = webExtStores(storageWebExt('sync'));
 ```
 
-#### `IStorageBackend`
+More information on the `IStorageBackend` interface that is implemented by all the above storage backends can be found [here](INTERFACES.md#istoragebackend).
 
-All of the above storage backends implements the `IStorageBackend` interface contract. To use a custom storage backend, implement the same contract as follows and pass it into `webExtStores`:
+## Synchronized Stores
 
-| Method | Signature | Description |
-| --- | --- | --- |
-| get | `get<T>(key: string): Promise<T \| undefined>` | Get value from storage backend. |
-| set | `set<T>(key: string, value: T): Promise<void>` | Set value in storage backend. |
-| addOnChangedListener | `addOnChangedListener(callback: OnChangedCallback): void` | Add listener for storage change events. More info below. |
-| cleanUp | `cleanUp(): void` | Perform clean up operations. |
-| remove | `remove(key: string): Promise<void>` | Remove item from storage. |
-| clear | `clear(): Promise<void>` | Clears all stored values from storage backend. |
+All provided synchronized stores below implements the `ISyncStore` interface contract. More information can be found [here](INTERFACES.md#isyncstore).
 
-The callbacks added by `addOnChangedListener` must be called whenever any value changes in the storage. The callback signature is as follows:
-
-`(changes: {[key: string]: { newValue?: any, oldValue?: any }}) => void`
-
-### Synchronized Stores
-
-#### `ISyncStore`
-
-All provided synchronized stores implements the `ISyncStore` interface contract. To use a custom synchronized store, implement the same contract as follows. Note that `ISyncStore` also extends Svelte's `Readable`, so you also have to implement its `subscribe` method.
-
-| Method | Signature | Description |
-| --- | --- | --- |
-| get | `get: () => Promise<T>` | Get current value after updating from backend. |
-| set | `set: (value: T) => Promise<void>` | Set value, inform subscribers, and push to storage. |
-| getCurrent | `getCurrent: () => T` | Get current value without updating from backend. Used for comparing storage changes when syncing from storage. |
-
-| Property | Type | Description |
-| --- | --- | --- |
-| syncFromExternal | boolean | Whether store should be updated when storage value is updated externally, e.g. storage value is changed by another page. |
-| key | string | Storage key. |
-
-#### `SyncStore`
+### `SyncStore`
 
 Standard store that synchronizes to the storage backend. Uses Svelte `writable` to implement the Svelte store contract.
 
@@ -126,8 +98,6 @@ WebExtStores.addSyncStore<T>(
 ): SyncStore<T>
 ```
 
-##### Parameters
-
 | Parameter | Description |
 | --- | --- |
 | key | Storage key |
@@ -135,16 +105,14 @@ WebExtStores.addSyncStore<T>(
 | syncFromExternal | Whether store should be updated when storage value is updated externally |
 | versionedOptions | Enables options for migrating storage values from an older version to a newer version |
 
-##### Methods
-
-All of `ISyncStore` and:
+Aside from methods derived from `ISyncStore`, `SyncStore` also contains the following methods:
 
 | Methods | Signature | Description |
 | --- | --- | --- |
 | ready | `() => Promise<void>` | Ensure that any async initialization process (such as initial update from backend) has been completed. You typically don't need to manually call this unless you wish to sync the store to the storage backend before any of `get()`, `set()` or `subscribe()` is called. |
 | reset | `() => Promise<void>` | Reset store value to default value. |
 
-#### Versioned Store Values and Migration
+### Versioned Store Values and Migration
 
 `SyncStore` and its derivatives has the optional parameter `versionedOptions`. When the parameter is provided, it keeps track of the current store's version to enable ease of migrating values from an older store version to the current version. This can be useful to migrate breaking changes on the stored data without reseting its value to default.
 
