@@ -49,9 +49,9 @@ export interface WebExtStores {
    * @param getStore Callback that provides the handler's StorageBackend and
    * expects an ISyncStore implementation.
    */
-  addCustomStore: (
-    getStore: (backend: IStorageBackend) => ISyncStore<any>
-  ) => void;
+  addCustomStore: <S extends ISyncStore<unknown>>(
+    getStore: (backend: IStorageBackend) => S
+  ) => S;
   /**
    * Removes and unregisters all registered stores from backend storage.
    * For tests purposes only.
@@ -111,11 +111,12 @@ export function webExtStores(backend: IStorageBackend = storageMV2()): WebExtSto
     return store;
   }
 
-  function addCustomStore(
-    getStore: (backend: IStorageBackend) => ISyncStore<any>
-  ): void {
+  function addCustomStore<S extends ISyncStore<any>>(
+    getStore: (backend: IStorageBackend) => S
+  ): S {
     const store = getStore(backend);
     stores.set(store.key, store);
+    return store;
   }
 
   async function _clear(): Promise<void> {
