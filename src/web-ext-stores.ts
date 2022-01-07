@@ -38,12 +38,12 @@ export interface WebExtStores {
    * @param versionedOptions Enables options for migrating storage values from
    * an older version to a newer version.
    */
-  addLookupStore: <T>(
+  addLookupStore: <T extends Record<string, any>>(
     key: string,
-    defaultValue: Record<string, T>,
+    defaultValue: T,
     syncFromExternal?: boolean,
-    versionedOptions?: VersionedOptions<Record<string, T>>
-  ) => LookupableStore<T, SyncStore<typeof defaultValue>>;
+    versionedOptions?: VersionedOptions<T>
+  ) => LookupableStore<T>;
   /**
    * Registers a custom store that implements ISyncStore.
    * @param getStore Callback that provides the handler's StorageBackend and
@@ -97,13 +97,13 @@ export function webExtStores(backend: IStorageBackend = storageMV2()): WebExtSto
     return store;
   }
 
-  function addLookupStore<T>(
+  function addLookupStore<T extends Record<string, any>>(
     key: string,
-    defaultValue: Record<string, T>,
+    defaultValue: T,
     syncFromExternal = true,
-    versionedOptions?: VersionedOptions<Record<string, T>>
-  ): LookupableStore<T, SyncStore<typeof defaultValue>> {
-    const store = addLookupMixin<T, SyncStore<typeof defaultValue>>(
+    versionedOptions?: VersionedOptions<T>
+  ): LookupableStore<T> {
+    const store = addLookupMixin<typeof defaultValue>(
       addSyncStore(
         key, defaultValue, syncFromExternal, versionedOptions
       )
