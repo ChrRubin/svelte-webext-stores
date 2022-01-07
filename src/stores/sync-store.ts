@@ -1,7 +1,7 @@
 import type { IStorageBackend } from '../storage';
 import { writable, Readable, Subscriber, Unsubscriber } from 'svelte/store';
 
-/** Interface contract for stores that is synchronized to storage. */
+/** Interface for stores that is synchronized to storage. */
 export interface ISyncStore<T> extends Readable<T> {
   /** Get current value after updating from backend. */
   get: () => Promise<T>;

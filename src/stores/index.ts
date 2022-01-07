@@ -1,4 +1,4 @@
 export {
   ISyncStore, SyncStore, VersionedOptions, syncStore
 } from './sync-store';
-export { LookupableStore, addLookupMixin } from './lookup-store';
+export { ILookupStore, addLookupMethods, LookupStore } from './lookup-store';

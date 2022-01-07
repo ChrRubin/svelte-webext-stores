@@ -125,8 +125,8 @@ describe('SyncStore versioned', () => {
 
 describe('LookupStore', () => {
   const key = 'score';
-  const value1 = { a: 1, b: 2, c: '3' };
-  const value2 = { a: 3, b: 4, c: '5' };
+  const value1 = { a: 1, b: false, c: '3' };
+  const value2 = { a: 3, b: true, c: '5' };
 
   test('Normal SyncStore functionality', async () => {
     const LS = LookupStore(key, value1);
@@ -139,15 +139,15 @@ describe('LookupStore', () => {
 
   test('getItem()', async () => {
     const LS = LookupStore(key, value1);
-    expect(await LS.getItem('a')).toBe(1);
-    expect(await LS.getItem('b')).toBe(2);
+    expect(await LS.getItem<number>('a')).toBe(1);
+    expect(await LS.getItem<boolean>('b')).toBe(false);
     expect(await LS.getItem<string>('c')).toBe('3');
   });
 
   test('setItem()', async () => {
     const LS = LookupStore(key, value1);
-    await LS.setItem('b', 10);
-    expect(await LS.getItem('b')).toBe(10);
-    expect(await backend.get(LS.key)).toStrictEqual({ a: 1, b: 10, c: '3' });
+    await LS.setItem<boolean>('b', true);
+    expect(await LS.getItem<boolean>('b')).toBe(true);
+    expect(await backend.get(LS.key)).toStrictEqual({ a: 1, b: true, c: '3' });
   });
 });

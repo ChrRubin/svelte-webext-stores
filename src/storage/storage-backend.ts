@@ -2,7 +2,7 @@ export interface StorageChange { newValue?: any, oldValue?: any }
 export type StorageChanges = Record<string, StorageChange>;
 export type OnChangedCallback = (changes: StorageChanges) => void;
 
-/** Interface contract for storage backends. */
+/** Interface for storage backends. */
 export interface IStorageBackend {
   /**
    * Get value from storage backend.

@@ -4,8 +4,8 @@ import {
   SyncStore,
   syncStore,
   VersionedOptions,
-  LookupableStore,
-  addLookupMixin
+  LookupStore,
+  addLookupMethods
 } from './stores';
 
 /**
@@ -43,7 +43,7 @@ export interface WebExtStores {
     defaultValue: T,
     syncFromExternal?: boolean,
     versionedOptions?: VersionedOptions<T>
-  ) => LookupableStore<T>;
+  ) => LookupStore<T>;
   /**
    * Registers a custom store that implements ISyncStore.
    * @param getStore Callback that provides the handler's StorageBackend and
@@ -102,8 +102,8 @@ export function webExtStores(backend: IStorageBackend = storageMV2()): WebExtSto
     defaultValue: T,
     syncFromExternal = true,
     versionedOptions?: VersionedOptions<T>
-  ): LookupableStore<T> {
-    const store = addLookupMixin<typeof defaultValue>(
+  ): LookupStore<T> {
+    const store = addLookupMethods<T, SyncStore<T>>(
       addSyncStore(
         key, defaultValue, syncFromExternal, versionedOptions
       )

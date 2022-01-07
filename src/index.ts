@@ -5,7 +5,7 @@ export {
 } from './storage';
 
 export {
-  ISyncStore, SyncStore, VersionedOptions, syncStore, addLookupMixin
+  ISyncStore, SyncStore, VersionedOptions, syncStore, addLookupMethods
 } from './stores';
 
 export { WebExtStores, webExtStores } from './web-ext-stores';

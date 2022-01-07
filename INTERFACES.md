@@ -1,10 +1,10 @@
-# Interface Contracts
+# Interfaces
 
-The following are interface contracts that can be used for your own custom implementations.
+The following are interfaces that can be used for your own custom implementations.
 
 ## `IStorageBackend`
 
-All provided storage backends implements the `IStorageBackend` interface contract. To use a custom storage backend, implement the same contract as follows:
+All provided storage backends implements the `IStorageBackend` interface. To use a custom storage backend, implement the interface as follows:
 
 | Method | Signature | Description |
 | --- | --- | --- |
@@ -33,7 +33,7 @@ const stores = webExtStores(customBackend);
 
 ## `ISyncStore`
 
-All provided synchronized stores implements the `ISyncStore` interface contract. To use a custom synchronized store, implement the same contract as follows.
+All provided synchronized stores implements the `ISyncStore` interface. To use a custom synchronized store, implement the interface as follows.
 
 Note that `ISyncStore` also extends Svelte's `Readable`, so you also have to implement its `subscribe` method.
 
@@ -57,7 +57,29 @@ function customSyncStore(key, defaultValue, backend) {
   // Implementation
 }
 
-const stores = webExtStores(customBackend);
+const stores = webExtStores();
 
 export const count = stores.addCustomStore((backend) => customSyncStore('count', 1, backend));
+```
+
+## `ILookupStore`
+
+`ILookupStore` is an interface that extends any `ISyncStore` implementation, with the additional `getItem` and `setItem` convenience methods to work with stored `Record<string, any>` objects. `LookupStore` is simply an `ILookupStore` that extends `SyncStore`.
+
+To add the convenience methods to your own custom `ISyncStore` implementation, import and use `addLookupMethods`:
+
+```js
+import { webExtStores } from 'svelte-webext-stores';
+
+function customSyncStore(key, defaultValue, backend) {
+  // Implementation
+}
+
+const stores = webExtStores();
+
+export const obj = stores.addCustomStore(
+  (backend) => addLookupMethods(
+    customSyncStore('obj', { a: 1, b: false, c: '3' }, backend)
+  )
+);
 ```

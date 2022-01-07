@@ -83,7 +83,7 @@ More information on the `IStorageBackend` interface that is implemented by all t
 
 ## Synchronized Stores
 
-All provided synchronized stores below implements the `ISyncStore` interface contract. More information can be found [here](INTERFACES.md#isyncstore).
+All provided synchronized stores below implements the `ISyncStore` interface. More information can be found [here](INTERFACES.md#isyncstore).
 
 ### `SyncStore`
 
@@ -111,6 +111,39 @@ Aside from methods derived from `ISyncStore`, `SyncStore` also contains the foll
 | --- | --- | --- |
 | ready | `() => Promise<void>` | Ensure that any async initialization process (such as initial update from backend) has been completed. You typically don't need to manually call this unless you wish to sync the store to the storage backend before any of `get()`, `set()` or `subscribe()` is called. |
 | reset | `() => Promise<void>` | Reset store value to default value. |
+
+### `LookupStore`
+
+Synchronized store for `Record<string, any>` objects. `LookupStore` is derived from and is functionally similar to `SyncStore`, with additional convenience methods for getting and setting the stored object's property values using property keys.
+
+```ts
+WebExtStores.addLookupStore<T extends Record<string, any>>(
+  key: string,
+  defaultValue: T,
+  syncFromExternal = true,
+  versionedOptions?: VersionedOptions<T>
+): LookupStore<T>
+```
+
+| Methods | Signature | Description |
+| --- | --- | --- |
+| getItem | `<R extends T[keyof T]>(key: keyof T) => Promise<R>` | Get property value. |
+| setItem | `<V extends T[keyof T]>(key: keyof T, value: V) => Promise<void>` | Set property value. |
+
+Example:
+
+```js
+import { webExtStores } from 'svelte-webext-stores';
+
+const stores = webExtStores();
+export const obj = stores.addLookupStore('obj', { a: 1, b: false, c: '3' });
+
+
+const a = await obj.getItem('a'); // Returns 1
+await obj.setItem('b', true); // Object is now { a: 1, b: false, c: '3' }
+```
+
+You can also easily add these convenience methods to your custom `ISyncStore` implementations. More information can be found [here](INTERFACES.md#ilookupstore).
 
 ### Versioned Store Values and Migration
 

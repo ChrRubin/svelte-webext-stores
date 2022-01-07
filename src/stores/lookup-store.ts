@@ -1,27 +1,30 @@
-import { ISyncStore } from './sync-store';
+import { ISyncStore, SyncStore } from './sync-store';
 
-type RecordStore<T extends Record<string, any>> = ISyncStore<T>;
-
-/**
- * SyncStore for `Record<string, any>` objects. Provides convenience functions
- * for getting and setting property values using property keys.
- */
-export type LookupableStore<T extends Record<string, any>> = RecordStore<T> & {
+export type ILookupStore<
+  T extends Record<string, any>, S extends ISyncStore<T>
+> = S & {
   /** Get object property value. */
   getItem: <R extends T[keyof T]>(key: keyof T) => Promise<R>;
   /** Set object property value. */
-  setItem: (key: keyof T, value: any) => Promise<void>;
+  setItem: <V extends T[keyof T]>(key: keyof T, value: V) => Promise<void>;
 };
 
-export function addLookupMixin<T extends Record<string, any>>(
-  store: RecordStore<T>
-): LookupableStore<T> {
+/**
+ * SyncStore for `Record<string, any>` objects. Provides convenience methods
+ * for getting and setting property values using property keys.
+ */
+export type LookupStore<T extends Record<string, any>> =
+  ILookupStore<T, SyncStore<T>>;
+
+export function addLookupMethods<
+  T extends Record<string, any>, S extends ISyncStore<T>
+>(store: S): ILookupStore<T, S> {
   async function getItem<R extends T[keyof T]>(key: keyof T): Promise<R> {
     const storeValue = await store.get();
     return storeValue[key];
   }
 
-  async function setItem(key: keyof T, value: any): Promise<void> {
+  async function setItem<V extends T[keyof T]>(key: keyof T, value: V): Promise<void> {
     const storeValue = await store.get();
     storeValue[key] = value;
     await store.set(storeValue);
