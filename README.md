@@ -50,11 +50,9 @@ export const count = stores.addSyncStore('count', 1);
 
 ## Advanced Usage
 
-Note: *The following documentation is a WIP.*
-
 ## Storage Backends
 
-This package supports and exports the following storage options out of the box. To use a provided storage options, simply import it and pass it into `webExtStores`.
+This library supports and exports the following storage options out of the box. To use a provided storage option, simply import it and pass it into `webExtStores`.
 
 | Storage | Description |
 | --- | --- |
@@ -157,7 +155,7 @@ You can also easily add these convenience methods to your custom `ISyncStore` im
 | seperator | string | Separator between key and version. |
 | migrations | `Map<number, (oldValue: any) => T>` | Map for migrating values. Keys are the old version to match against, and values are callbacks that accepts the value found from the given old version and returns the corresponding value for the current version. Use the key `-1` to migrate from a versionless store. |
 
-SyncStores that are provided with the `versionedOptions` parameter are stored as `${key}${seperator}${version}` internally. When an older version that matches any of the keys in the Map is found, its value is passed to the callback, the migrated value is stored and the old version is removed.
+SyncStores that are provided with the `versionedOptions` parameter are stored as `${key}${seperator}${version}` internally. When an older version that matches any of the keys in the Map is found, its value is passed to the callback, the returned value is stored and the old version is removed.
 
 ```js
 // Initial store

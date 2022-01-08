@@ -2,7 +2,7 @@ import type * as browser from 'webextension-polyfill';
 import { IStorageBackend, StorageChanges, OnChangedCallback } from './storage-backend';
 
 export type WebExtStorageArea = 'local' | 'sync' | 'managed';
-type OnChangedListener = (changes: StorageChanges, areaName: WebExtStorageArea) => void;
+type OnChangedListener = (changes: StorageChanges, areaName: string) => void;
 
 interface WebExtStorage {
   storageArea: browser.Storage.StorageArea;
@@ -20,6 +20,10 @@ export function initWebExtStorage(type: 'webExt' | 'chrome', area: WebExtStorage
   const listeners: OnChangedListener[] = [];
   // @ts-expect-error Ignore browser namespace error
   const storage = type === 'webExt' ? browser.storage : chrome.storage;
+  if (storage == null) {
+    throw new TypeError('storage is undefined. Perhaps the storage permission is not granted?');
+  }
+
   const storageArea = storage[area];
 
   function addOnChangedListener(callback: OnChangedCallback): void {
@@ -32,7 +36,7 @@ export function initWebExtStorage(type: 'webExt' | 'chrome', area: WebExtStorage
   }
 
   function cleanUp(): void {
-    listeners.forEach((l) => chrome.storage.onChanged.removeListener(l));
+    listeners.forEach((l) => storage.onChanged.removeListener(l));
   }
 
   return { storageArea, addOnChangedListener, cleanUp };
