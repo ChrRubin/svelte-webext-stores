@@ -55,6 +55,11 @@ export interface SyncStore<T> extends ISyncStore<T> {
   ready: () => Promise<void>;
   /** Reset store value to default value. */
   reset: () => Promise<void>;
+  /**
+   * Update value using callback and inform subscribers.
+   * @param updater callback
+   */
+  update: (updater: (value: T) => T) => Promise<void>;
 }
 
 /**
@@ -144,6 +149,10 @@ export function syncStore<T>(
     return store.subscribe(run);
   }
 
+  async function update(updater: (value: T) => T): Promise<void> {
+    return await set(updater(currentValue));
+  }
+
   return {
     subscribe,
     get,
@@ -152,6 +161,7 @@ export function syncStore<T>(
     reset,
     ready,
     syncFromExternal,
-    key
+    key,
+    update
   };
 }

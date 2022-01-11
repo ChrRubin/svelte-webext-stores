@@ -75,6 +75,13 @@ describe('SyncStore', () => {
     unSub = store.subscribe(callback);
     store.set(value2).catch((e) => console.error(e));
   });
+
+  test('Update', async () => {
+    const store = SyncStore(key, value1);
+    const updater = (value: string): string => value + '!';
+    await store.update(updater);
+    expect(await store.get()).toBe(value1 + '!');
+  });
 });
 
 describe('SyncStore versioned', () => {

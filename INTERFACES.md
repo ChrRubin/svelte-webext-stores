@@ -8,12 +8,12 @@ All provided storage backends implements the `IStorageBackend` interface. To use
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| get | `get<T>(key: string): Promise<T \| undefined>` | Get value from storage backend. |
-| set | `set<T>(key: string, value: T): Promise<void>` | Set value in storage backend. |
-| addOnChangedListener | `addOnChangedListener(callback: OnChangedCallback): void` | Add listener for storage change events. More info below. |
-| cleanUp | `cleanUp(): void` | Perform clean up operations. |
-| remove | `remove(key: string): Promise<void>` | Remove item from storage. |
-| clear | `clear(): Promise<void>` | Clears all stored values from storage backend. |
+| get | `get: <T>(key: string) => Promise<T \| undefined>` | Get value from storage backend. |
+| set | `set: <T>(key: string, value: T) => Promise<void>` | Set value in storage backend. |
+| addOnChangedListener | `addOnChangedListener: (callback: OnChangedCallback) => void` | Add listener for storage change events. More info below. |
+| cleanUp | `cleanUp: () => void` | Perform clean up operations. |
+| remove | `remove: (key: string) => Promise<void>` | Remove item from storage. |
+| clear | `clear: () => Promise<void>` | Clears all stored values from storage backend. |
 
 The callbacks added by `addOnChangedListener` must be called whenever any value changes in the storage. The callback signature is as follows:
 

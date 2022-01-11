@@ -107,8 +107,9 @@ Aside from methods derived from `ISyncStore`, `SyncStore` also contains the foll
 
 | Methods | Signature | Description |
 | --- | --- | --- |
-| ready | `() => Promise<void>` | Ensure that any async initialization process (such as initial update from backend) has been completed. You typically don't need to manually call this unless you wish to sync the store to the storage backend before any of `get()`, `set()` or `subscribe()` is called. |
-| reset | `() => Promise<void>` | Reset store value to default value. |
+| ready | `ready: () => Promise<void>` | Ensure that any async initialization process (such as initial update from backend) has been completed. You typically don't need to manually call this unless you wish to sync the store to the storage backend before any of `get()`, `set()`, `subscribe()` or `update()` is called. |
+| reset | `reset: () => Promise<void>` | Reset store value to default value. |
+| update | `update: (updater: (value: T) => T) => Promise<void>` | Update value using callback and inform subscribers. |
 
 ### `LookupStore`
 
@@ -125,8 +126,8 @@ WebExtStores.addLookupStore<T extends Record<string, any>>(
 
 | Methods | Signature | Description |
 | --- | --- | --- |
-| getItem | `<R extends T[keyof T]>(key: keyof T) => Promise<R>` | Get property value. |
-| setItem | `<V extends T[keyof T]>(key: keyof T, value: V) => Promise<void>` | Set property value. |
+| getItem | `getItem: <R extends T[keyof T]>(key: keyof T) => Promise<R>` | Get property value. |
+| setItem | `setItem: <V extends T[keyof T]>(key: keyof T, value: V) => Promise<void>` | Set property value. |
 
 Example:
 
