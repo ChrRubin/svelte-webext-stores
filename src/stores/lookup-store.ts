@@ -25,7 +25,7 @@ export function addLookupMethods<
   }
 
   async function setItem<V extends T[keyof T]>(key: keyof T, value: V): Promise<void> {
-    const storeValue = await store.get();
+    const storeValue = {...await store.get()};
     storeValue[key] = value;
     await store.set(storeValue);
   }

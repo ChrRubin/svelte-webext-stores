@@ -121,6 +121,7 @@ export function syncStore<T>(
   }
 
   async function set(value: T): Promise<void> {
+    if (value === currentValue) return;
     setStore(value);
     await backend.set(key, value);
   }
