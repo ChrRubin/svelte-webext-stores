@@ -76,8 +76,7 @@ export function webExtStores(backend: IStorageBackend = storageMV2()): WebExtSto
       const result = stores.get(key);
       if (
         result == null ||
-        !result.syncFromExternal ||
-        change.oldValue !== result.getCurrent()
+        !result.syncFromExternal
       ) return;
       result.set(change.newValue).catch((e) => console.error(e));
     });
