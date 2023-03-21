@@ -11,6 +11,11 @@ export interface ISyncStore<T> extends Readable<T> {
    */
   set: (value: T) => Promise<void>;
   /**
+   * Set value, inform subscribers without pushing to storage.
+   * @param value to set
+   */
+  setRaw: (value: T) => void;
+  /**
    * Get current value without updating from backend.
    *
    * Used for comparing storage changes when syncing from storage.
@@ -120,6 +125,11 @@ export function syncStore<T>(
     return currentValue;
   }
 
+  function setRaw(value: T): void {
+    if (value === currentValue) return;
+    setStore(value);
+  }
+
   async function set(value: T): Promise<void> {
     if (value === currentValue) return;
     setStore(value);
@@ -158,6 +168,7 @@ export function syncStore<T>(
     subscribe,
     get,
     set,
+    setRaw,
     getCurrent,
     reset,
     ready,
